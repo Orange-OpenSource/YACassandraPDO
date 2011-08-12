@@ -1,0 +1,171 @@
+<?xml version='1.0' encoding="utf-8"?>
+<!-- Purpose: database.vendors -->
+<!-- Membership: pecl -->
+<!-- State: experimental -->
+<section xml:id="pdo-cassandra.constants" xmlns="http://docbook.org/ns/docbook">
+ &reftitle.constants;
+ &pdo.driver-constants;
+ <variablelist>
+  <varlistentry>
+   <term>
+    <constant>PDO::CASSANDRA_ATTR_NUM_RETRIES</constant>
+     (<type>integer</type>)
+   </term>
+   <listitem>
+    <para>
+     How many times to try to retry if connection fails.
+    </para>
+   </listitem>
+  </varlistentry>
+  <varlistentry>
+   <term>
+    <constant>PDO::CASSANDRA_ATTR_RETRY_INTERVAL</constant>
+     (<type>integer</type>)
+   </term>
+   <listitem>
+    <para>
+     Sets how long to wait until retrying a host if it was marked down.
+    </para>
+   </listitem>
+  </varlistentry>
+  <varlistentry>
+   <term>
+    <constant>PDO::CASSANDRA_ATTR_MAX_CONSECUTIVE_FAILURES</constant>
+     (<type>integer</type>)
+   </term>
+   <listitem>
+    <para>
+     Sets how many times to keep retrying a host before marking it as down.
+    </para>
+   </listitem>
+  </varlistentry>
+  <varlistentry>
+   <term>
+    <constant>PDO::CASSANDRA_ATTR_RANDOMIZE</constant>
+     (<type>boolean</type>)
+   </term>
+   <listitem>
+    <para>
+     Randomize which host connect to. This option can
+     be used if the DSN contains multiple host and port
+     combinations.
+    </para>
+   </listitem>
+  </varlistentry>
+  <varlistentry>
+   <term>
+    <constant>PDO::CASSANDRA_ATTR_ALWAYS_TRY_LAST</constant>
+     (<type>boolean</type>)
+   </term>
+   <listitem>
+    <para>
+     Always try to connect to the last host in the list.
+    </para>
+   </listitem>
+  </varlistentry>
+  <varlistentry>
+   <term>
+    <constant>PDO::CASSANDRA_ATTR_LINGER</constant>
+     (<type>integer</type>)
+   </term>
+   <listitem>
+    <para>
+     How long does the socket linger after it's being closed.
+     Value 0 turns off linger.
+    </para>
+   </listitem>
+  </varlistentry>
+  <varlistentry>
+   <term>
+    <constant>PDO::CASSANDRA_ATTR_NO_DELAY</constant>
+     (<type>boolean</type>)
+   </term>
+   <listitem>
+    <para>
+     Whether to enable/disable Nagle algorithm.
+    </para>
+   </listitem>
+  </varlistentry>
+  <varlistentry>
+   <term>
+    <constant>PDO::CASSANDRA_ATTR_CONN_TIMEOUT</constant>
+     (<type>integer</type>)
+   </term>
+   <listitem>
+    <para>
+     The connection timeout value. This driver will 
+     try to connect if the connection has been lost so 
+     this value can be set to control the timeout after
+     object construction.
+    </para>
+   </listitem>
+  </varlistentry>
+  <varlistentry>
+   <term>
+    <constant>PDO::CASSANDRA_ATTR_RECV_TIMEOUT</constant>
+     (<type>integer</type>)
+   </term>
+   <listitem>
+    <para>
+     Receive timeout.
+    </para>
+   </listitem>
+  </varlistentry>
+  <varlistentry>
+   <term>
+    <constant>PDO::CASSANDRA_ATTR_SEND_TIMEOUT</constant>
+     (<type>integer</type>)
+   </term>
+   <listitem>
+    <para>
+     Send timeout.
+    </para>
+   </listitem>
+  </varlistentry>
+  <varlistentry>
+   <term>
+    <constant>PDO::CASSANDRA_ATTR_COMPRESSION</constant>
+     (<type>boolean</type>)
+   </term>
+   <listitem>
+    <para>
+     Whether to enable compression.
+    </para>
+   </listitem>
+  </varlistentry>
+  <varlistentry>
+   <term>
+    <constant>PDO::CASSANDRA_ATTR_THRIFT_DEBUG</constant>
+     (<type>boolean</type>)
+   </term>
+   <listitem>
+    <para>
+     Turns on thrift debugging. This converts thrift
+     messages into PHP warnings. This option can be passed into the 
+     PDO constructor in the fourth argument.
+    </para>
+   </listitem>
+  </varlistentry>
+ </variablelist>
+</section>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->
