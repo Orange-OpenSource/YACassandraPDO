@@ -1,2 +1,5 @@
+0.1.1
+- Fix issue where row count was used instead column count
+
 0.1.0
 - Initial release

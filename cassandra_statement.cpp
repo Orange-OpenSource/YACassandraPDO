@@ -32,6 +32,7 @@ static int pdo_cassandra_stmt_execute(pdo_stmt_t *stmt TSRMLS_DC)
 		S->result.reset (new CqlResult);
 		H->client->execute_cql_query(*S->result.get (), q, (H->compression ? Compression::GZIP : Compression::NONE));
 		S->has_iterator = 0;
+        stmt->row_count = S->result.get()->rows.size ();
 		return 1;
 	} catch (NotFoundException &e) {
 		pdo_cassandra_error(stmt->dbh, PDO_CASSANDRA_NOT_FOUND, "%s", e.what());
@@ -67,6 +68,7 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 	if (!S->has_iterator) {
 		S->it = S->result.get()->rows.begin ();
 		S->has_iterator = 1;
+        stmt->column_count = (*S->it).columns.size ();
 	} else {
 		S->it++;
 	}
@@ -76,8 +78,6 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 		S->has_iterator = 0;
 		return 0;
 	}
-
-	stmt->column_count = S->result.get()->rows.size ();
 	return 1;
 }
 /* }}} */

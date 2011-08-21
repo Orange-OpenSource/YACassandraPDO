@@ -23,11 +23,15 @@ echo "OK";
 --EXPECT--
 array(1) {
   [0]=>
-  array(2) {
+  array(4) {
     ["my_key"]=>
     string(5) "mikko"
     [0]=>
     string(5) "mikko"
+    ["full_name"]=>
+    string(7) "Mikko K"
+    [1]=>
+    string(7) "Mikko K"
   }
 }
 OK
