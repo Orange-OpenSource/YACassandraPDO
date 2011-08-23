@@ -29,10 +29,10 @@ static int pdo_cassandra_stmt_execute(pdo_stmt_t *stmt TSRMLS_DC)
 			H->transport->open();
 		}
 		std::string q = stmt->active_query_string;
-		S->result.reset (new CqlResult);
-		H->client->execute_cql_query(*S->result.get (), q, (H->compression ? Compression::GZIP : Compression::NONE));
+		S->result.reset(new CqlResult);
+		H->client->execute_cql_query(*S->result.get(), q, (H->compression ? Compression::GZIP : Compression::NONE));
 		S->has_iterator = 0;
-		stmt->row_count = S->result.get()->rows.size ();
+		stmt->row_count = S->result.get()->rows.size();
 		return 1;
 	} catch (NotFoundException &e) {
 		pdo_cassandra_error(stmt->dbh, PDO_CASSANDRA_NOT_FOUND, "%s", e.what());
@@ -65,15 +65,18 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 {
 	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
 
+	if (!S->result.get()->rows.size ())
+		return 0;
+
 	if (!S->has_iterator) {
-		S->it = S->result.get()->rows.begin ();
+		S->it = S->result.get()->rows.begin();
 		S->has_iterator = 1;
-		stmt->column_count = (*S->it).columns.size ();
+		stmt->column_count = (*S->it).columns.size();
 	} else {
 		S->it++;
 	}
 
-	if (S->it == S->result.get()->rows.end ()) {
+	if (S->it == S->result.get()->rows.end()) {
 		// Iterated all rows, reset the iterator
 		S->has_iterator = 0;
 		return 0;
@@ -88,16 +91,16 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 {
 	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
 
-	if (colno < 0 || (colno >= 0 && (static_cast <size_t>(colno) >= (*S->it).columns.size ()))) {
+	if (colno < 0 || (colno >= 0 && (static_cast <size_t>(colno) >= (*S->it).columns.size()))) {
 		return 0;
 	}
 
-	if (!(*S->it).columns[colno].name.size ()) {
+	if (!(*S->it).columns[colno].name.size()) {
 		return 0;
 	}
 
-	stmt->columns[colno].name       = estrdup (const_cast <char *> ((*S->it).columns[colno].name.c_str ()));
-	stmt->columns[colno].namelen    = (*S->it).columns[colno].name.size ();
+	stmt->columns[colno].name       = estrdup (const_cast <char *> ((*S->it).columns[colno].name.c_str()));
+	stmt->columns[colno].namelen    = (*S->it).columns[colno].name.size();
 	stmt->columns[colno].maxlen     = -1;
 	stmt->columns[colno].precision  = 0;
 	stmt->columns[colno].param_type = PDO_PARAM_STR;
@@ -112,10 +115,10 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
 {
 	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
 
-	if (colno < 0 || (colno >= 0 && (static_cast <size_t>(colno) >= (*S->it).columns.size ()))) {
+	if (colno < 0 || (colno >= 0 && (static_cast <size_t>(colno) >= (*S->it).columns.size()))) {
 		return 0;
 	}
-	*ptr          = const_cast <char *> ((*S->it).columns[colno].value.c_str ());
+	*ptr          = const_cast <char *> ((*S->it).columns[colno].value.c_str());
 	*len          = (*S->it).columns[colno].value.size();
 	*caller_frees = 0;
 	return 1;
@@ -128,7 +131,7 @@ static int pdo_cassandra_stmt_get_column_meta(pdo_stmt_t *stmt, long colno, zval
 {
 	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
 
-	if (colno < 0 || (colno >= 0 && (static_cast <size_t>(colno) >= (*S->it).columns.size ()))) {
+	if (colno < 0 || (colno >= 0 && (static_cast <size_t>(colno) >= (*S->it).columns.size()))) {
 		return FAILURE;
 	}
 	array_init(return_value);
