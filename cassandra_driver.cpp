@@ -314,6 +314,23 @@ static int pdo_cassandra_handle_prepare(pdo_dbh_t *dbh, const char *sql, long sq
 }
 /* }}} */
 
+void pdo_cassandra_set_active_keyspace(pdo_cassandra_db_handle *H, const std::string &sql)
+{
+	char *copy = estrndup(sql.c_str (), sql.size ());
+	char *pch, *last = NULL;
+
+	pch = php_strtok_r(copy, " \t\n\r", &last);
+
+	if (pch && strncasecmp (pch, "USE", 3) == 0)
+	{
+		pch = php_strtok_r(NULL, " \t\n\r", &last);
+
+		if (pch && strlen (pch) > 0)
+			H->active_keyspace = pch;
+	}
+	efree(copy);
+}
+
 /** {{{ static long pdo_cassandra_handle_execute(pdo_dbh_t *dbh, const char *sql, long sql_len TSRMLS_DC)
 */
 static long pdo_cassandra_handle_execute(pdo_dbh_t *dbh, const char *sql, long sql_len TSRMLS_DC)
@@ -326,10 +343,11 @@ static long pdo_cassandra_handle_execute(pdo_dbh_t *dbh, const char *sql, long s
 			H->transport->open();
 		}
 
-		std::string q(sql);
-		CqlResult result;
+		std::string query(sql);
+		pdo_cassandra_set_active_keyspace(H, query);
 
-		H->client->execute_cql_query(result, q, (H->compression ? Compression::GZIP : Compression::NONE));
+		CqlResult result;
+		H->client->execute_cql_query(result, query, (H->compression ? Compression::GZIP : Compression::NONE));
 
 		if (result.type == CqlResultType::INT) {
 			return result.num;
@@ -375,7 +393,7 @@ static int pdo_cassandra_handle_quote(pdo_dbh_t *dbh, const char *unquoted, int 
 	}
 
 	*quotedlen = spprintf(quoted, 0, "'%s'", escaped);
-	efree (escaped);
+	efree(escaped);
 	return 1;
 }
 /* }}} */

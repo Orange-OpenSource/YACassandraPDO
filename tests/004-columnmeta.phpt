@@ -12,18 +12,26 @@ pdo_cassandra_init ($db, $keyspace);
 
 $stmt = $db->query ("SELECT my_key, full_name FROM users;");
 $stmt->fetch ();
-var_dump ($stmt->getColumnMeta (0));
+var_dump ($stmt->getColumnMeta (1));
 var_dump ($stmt->getColumnMeta (3));
 
 pdo_cassandra_done ($db, $keyspace);
 
 echo "OK";
 --EXPECT--
-array(5) {
+array(9) {
   ["native_type"]=>
-  string(6) "string"
-  ["name"]=>
+  string(40) "org.apache.cassandra.db.marshal.UTF8Type"
+  ["comparator"]=>
+  string(40) "org.apache.cassandra.db.marshal.UTF8Type"
+  ["default_validation_class"]=>
+  string(40) "org.apache.cassandra.db.marshal.UTF8Type"
+  ["key_validation_class"]=>
+  string(40) "org.apache.cassandra.db.marshal.UTF8Type"
+  ["key_alias"]=>
   string(6) "my_key"
+  ["name"]=>
+  string(9) "full_name"
   ["len"]=>
   int(-1)
   ["precision"]=>
