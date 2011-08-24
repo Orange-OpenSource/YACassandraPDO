@@ -140,6 +140,17 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 }
 /* }}} */
 
+int64_t pdo_cassandra_marshal_numeric (const std::string &test) 
+{
+	const unsigned char *bytes = reinterpret_cast <const unsigned char *>(test.c_str());
+
+	int64_t val = 0;
+	for (size_t i = 0; i < test.size (); i++)
+		val = val << 8 | bytes[i];
+
+	return val;
+}
+
 /** {{{ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr, unsigned long *len, int *caller_frees TSRMLS_DC)
 */
 static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr, unsigned long *len, int *caller_frees TSRMLS_DC)
@@ -150,9 +161,31 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
 		return 0;
 	}
 
-	*ptr          = const_cast <char *> ((*S->it).columns[colno].value.c_str());
-	*len          = (*S->it).columns[colno].value.size();
-	*caller_frees = 0;
+	switch (stmt->columns[colno].param_type)
+	{
+		case PDO_PARAM_LOB:
+		case PDO_PARAM_STR:
+			*ptr = const_cast <char *> ((*S->it).columns[colno].value.c_str());
+			*len = (*S->it).columns[colno].value.size();
+			*caller_frees = 0;
+		break;
+
+		case PDO_PARAM_INT:
+		{
+			long value = (long) pdo_cassandra_marshal_numeric((*S->it).columns[colno].value);
+			long *p = (long *) emalloc(sizeof (long));
+			memcpy (p, &value, sizeof(long));
+
+			*len = sizeof(long);
+			*caller_frees = 1;
+			*ptr = (char *)p;
+		}
+		break;
+
+		default:
+		break;
+	}
+
 	return 1;
 }
 /* }}} */
@@ -239,13 +272,14 @@ static int pdo_cassandra_stmt_dtor(pdo_stmt_t *stmt TSRMLS_DC)
 }
 /* }}} */
 
+
 struct pdo_stmt_methods cassandra_stmt_methods = {
 	pdo_cassandra_stmt_dtor,
 	pdo_cassandra_stmt_execute,
 	pdo_cassandra_stmt_fetch,
 	pdo_cassandra_stmt_describe,
 	pdo_cassandra_stmt_get_column,
-	NULL,
+	NULL, /* param_hook */
 	NULL, /* set_attr */
 	NULL, /* get_attr */
 	pdo_cassandra_stmt_get_column_meta,
