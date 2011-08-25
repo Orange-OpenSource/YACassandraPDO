@@ -1,3 +1,8 @@
+0.1.2
+- Added proper support for numeric types
+- Added support for sparse columns
+- Added more tests
+
 0.1.1
 - Fix issue where row count was used instead column count
 
