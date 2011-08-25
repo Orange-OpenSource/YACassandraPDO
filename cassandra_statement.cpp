@@ -97,6 +97,8 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 }
 /* }}} */
 
+/** {{{ pdo_cassandra_type pdo_cassandra_get_type(const std::string &type)
+*/
 pdo_cassandra_type pdo_cassandra_get_type(const std::string &type)
 {
 	if (!type.compare("org.apache.cassandra.db.marshal.BytesType")) {
@@ -119,6 +121,7 @@ pdo_cassandra_type pdo_cassandra_get_type(const std::string &type)
 		return PDO_CASSANDRA_TYPE_UNKNOWN;
 	}
 }
+/* }}} */
 
 /** {{{ static int64_t pdo_cassandra_marshal_numeric(const std::string &test)
 */
@@ -217,15 +220,15 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
 			long *p    = (long *) emalloc(sizeof (long));
 			memcpy (p, &value, sizeof(long));
 
-			*len = sizeof(long);
+			*ptr          = (char *)p;
+			*len          = sizeof(long);
 			*caller_frees = 1;
-			*ptr = (char *)p;
 		}
 		break;
 
 		default:
-			*ptr = const_cast <char *> ((*S->it).columns[colno].value.c_str());
-			*len = (*S->it).columns[colno].value.size();
+			*ptr          = const_cast <char *> ((*S->it).columns[colno].value.c_str());
+			*len          = (*S->it).columns[colno].value.size();
 			*caller_frees = 0;
 		break;
 	}
@@ -276,7 +279,7 @@ static int pdo_cassandra_stmt_get_column_meta(pdo_stmt_t *stmt, long colno, zval
 	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
 	pdo_cassandra_db_handle *H = static_cast <pdo_cassandra_db_handle *>(S->H);
 
-	if (!S->result.get()->rows.size()) {
+	if (!stmt->row_count) {
 		return FAILURE;
 	}
 	array_init(return_value);

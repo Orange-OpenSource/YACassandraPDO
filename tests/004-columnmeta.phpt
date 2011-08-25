@@ -33,6 +33,8 @@ $db->exec ("CREATE COLUMNFAMILY types_test(
 $stmt = $db->prepare ("INSERT INTO types_test(my_key, my_bytea, my_ascii, my_text, my_varchar, my_uuid, my_varint, my_int, my_bigint)
 									VALUES   (:key,   :bytea,   :ascii,   :text,   :varchar,   :uuid,   :varint,   :int,   :bigint)");
 
+$stmt->getColumnMeta (0);
+
 $stmt->bindValue (':key', "hello key");
 $stmt->bindValue (':bytea', "74686520616e73776572206973203432");
 $stmt->bindValue (':ascii', "hello ascii");
