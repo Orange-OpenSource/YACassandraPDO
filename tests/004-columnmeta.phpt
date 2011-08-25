@@ -60,7 +60,7 @@ echo "OK";
 --EXPECTF--
 array(5) {
   ["native_type"]=>
-  string(7) "unknown"
+  string(9) "key_alias"
   ["name"]=>
   string(6) "my_key"
   ["len"]=>

@@ -292,29 +292,35 @@ static int pdo_cassandra_stmt_get_column_meta(pdo_stmt_t *stmt, long colno, zval
 	bool found = false;
 	for (size_t i = 0; i < H->description.cf_defs.size(); i++) {
 		for (size_t j = 0; j < H->description.cf_defs [i].column_metadata.size(); j++) {
-			if (!(*S->it).columns[colno].name.compare(H->description.cf_defs [i].column_metadata [j].name))
+			if (!(*S->it).columns[colno].name.compare(H->description.cf_defs[i].column_metadata[j].name))
 			{
 				found = true;
 				add_assoc_string(return_value,
 				                 "native_type",
-								 const_cast <char *> (H->description.cf_defs [i].column_metadata [j].validation_class.c_str()),
+								 const_cast <char *> (H->description.cf_defs[i].column_metadata[j].validation_class.c_str()),
 								 1);
 				add_assoc_string(return_value,
 				                 "comparator",
-								 const_cast <char *> (H->description.cf_defs [i].comparator_type.c_str()),
+								 const_cast <char *> (H->description.cf_defs[i].comparator_type.c_str()),
 								 1);
 				add_assoc_string(return_value,
 				                 "default_validation_class",
-								 const_cast <char *> (H->description.cf_defs [i].default_validation_class.c_str()),
+								 const_cast <char *> (H->description.cf_defs[i].default_validation_class.c_str()),
 								 1);
 				add_assoc_string(return_value,
 				                 "key_validation_class",
-								 const_cast <char *> (H->description.cf_defs [i].key_validation_class.c_str()),
+								 const_cast <char *> (H->description.cf_defs[i].key_validation_class.c_str()),
 								 1);
 				add_assoc_string(return_value,
 				                 "key_alias",
-								 const_cast <char *> (H->description.cf_defs [i].key_alias.c_str()),
+								 const_cast <char *> (H->description.cf_defs[i].key_alias.c_str()),
 								 1);
+			} else if (!H->description.cf_defs [i].key_alias.compare((*S->it).columns[colno].name)) {
+				add_assoc_string(return_value,
+				                 "native_type",
+								 "key_alias",
+								 1);
+				found = true;
 			}
 		}
 	}
