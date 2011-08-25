@@ -347,7 +347,6 @@ static long pdo_cassandra_handle_execute(pdo_dbh_t *dbh, const char *sql, long s
 		}
 
 		std::string query(sql);
-		pdo_cassandra_set_active_keyspace(H, query);
 
 		CqlResult result;
 		H->client->execute_cql_query(result, query, (H->compression ? Compression::GZIP : Compression::NONE));
@@ -355,6 +354,8 @@ static long pdo_cassandra_handle_execute(pdo_dbh_t *dbh, const char *sql, long s
 		if (result.type == CqlResultType::INT) {
 			return result.num;
 		}
+		pdo_cassandra_set_active_keyspace(H, query);
+
 		return 0;
 	} catch (NotFoundException &e) {
 		pdo_cassandra_error(dbh, PDO_CASSANDRA_NOT_FOUND, "%s", e.what());

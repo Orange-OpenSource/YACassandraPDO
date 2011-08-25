@@ -1,5 +1,5 @@
 --TEST--
-Test different data types
+Test integers
 --SKIPIF--
 <?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
 --FILE--

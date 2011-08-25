@@ -30,12 +30,13 @@ static int pdo_cassandra_stmt_execute(pdo_stmt_t *stmt TSRMLS_DC)
 		}
 
 		std::string query(stmt->active_query_string);
-		pdo_cassandra_set_active_keyspace(H, query);
 
 		S->result.reset(new CqlResult);
 		H->client->execute_cql_query(*S->result.get(), query, (H->compression ? Compression::GZIP : Compression::NONE));
 		S->has_iterator = 0;
 		stmt->row_count = S->result.get()->rows.size();
+		pdo_cassandra_set_active_keyspace(H, query);
+
 		return 1;
 	} catch (NotFoundException &e) {
 		pdo_cassandra_error(stmt->dbh, PDO_CASSANDRA_NOT_FOUND, "%s", e.what());
@@ -74,7 +75,14 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 	if (!S->has_iterator) {
 		S->it = S->result.get()->rows.begin();
 		S->has_iterator = 1;
-		stmt->column_count = (*S->it).columns.size();
+
+		// Find the largets number of columns
+		stmt->column_count = 0;
+		for (size_t i = 0; i < S->result.get()->rows.size(); i++) {
+			if (S->result.get()->rows [i].columns.size() > stmt->column_count) {
+				stmt->column_count = S->result.get()->rows [i].columns.size();
+			}
+		}
 	} else {
 		S->it++;
 	}
@@ -82,11 +90,61 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 	if (S->it == S->result.get()->rows.end()) {
 		// Iterated all rows, reset the iterator
 		S->has_iterator = 0;
+		S->it = S->result.get()->rows.begin();
 		return 0;
 	}
 	return 1;
 }
 /* }}} */
+
+pdo_cassandra_type pdo_cassandra_get_type(const std::string &type)
+{
+	if (!type.compare("org.apache.cassandra.db.marshal.BytesType")) {
+		return PDO_CASSANDRA_TYPE_BYTES;
+	} else if (!type.compare("org.apache.cassandra.db.marshal.AsciiType")) {
+		return PDO_CASSANDRA_TYPE_ASCII;
+	} else if (!type.compare("org.apache.cassandra.db.marshal.UTF8Type")) {
+		return PDO_CASSANDRA_TYPE_UTF8;
+	} else if (!type.compare("org.apache.cassandra.db.marshal.IntegerType")) {
+		return PDO_CASSANDRA_TYPE_INTEGER;
+	} else if (!type.compare("org.apache.cassandra.db.marshal.LongType")) {
+		return PDO_CASSANDRA_TYPE_LONG;
+	} else if (!type.compare("org.apache.cassandra.db.marshal.UUIDType")) {
+		return PDO_CASSANDRA_TYPE_UUID;
+	} else if (!type.compare("org.apache.cassandra.db.marshal.LexicalType")) {
+		return PDO_CASSANDRA_TYPE_LEXICAL;
+	} else if (!type.compare("org.apache.cassandra.db.marshal.TimeUUIDType")) {
+		return PDO_CASSANDRA_TYPE_TIMEUUID;
+	} else {
+		return PDO_CASSANDRA_TYPE_UNKNOWN;
+	}
+}
+
+/** {{{ static int64_t pdo_cassandra_marshal_numeric(const std::string &test)
+*/
+static int64_t pdo_cassandra_marshal_numeric(const std::string &test) 
+{
+	const unsigned char *bytes = reinterpret_cast <const unsigned char *>(test.c_str());
+
+	int64_t val = 0;
+	size_t siz = test.size ();
+	for (size_t i = 0; i < siz; i++)
+		val = val << 8 | bytes[i];
+
+	return val;
+}
+/* }}} */
+
+static void pdo_cassandra_empty_column(pdo_stmt_t *stmt, int colno)
+{
+	if (stmt->columns[colno].namelen)
+		efree(stmt->columns[colno].name);
+
+	stmt->columns[colno].namelen    = spprintf(&(stmt->columns[colno].name), 0, "__column_not_set_%d", colno);
+	stmt->columns[colno].precision  = 0;
+	stmt->columns[colno].maxlen     = -1;
+	stmt->columns[colno].param_type = PDO_PARAM_STR;
+}
 
 /** {{{ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 */
@@ -95,85 +153,68 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
 	pdo_cassandra_db_handle *H = static_cast <pdo_cassandra_db_handle *>(S->H);
 
-	if (colno < 0 || (colno >= 0 && (static_cast <size_t>(colno) >= (*S->it).columns.size()))) {
-		return 0;
+	// This could be sparse column scenario
+	if (static_cast <size_t>(colno) >= (*S->it).columns.size()) {
+		pdo_cassandra_empty_column(stmt, colno);
+		return 1;
 	}
 
-	if (!(*S->it).columns[colno].name.size()) {
-		return 0;
+	if (!H->has_description) {
+		H->client->describe_keyspace(H->description, H->active_keyspace);
+		H->has_description = 1;
 	}
-
-	KsDef description;
-	H->client->describe_keyspace(description, H->active_keyspace);
 
 	stmt->columns[colno].param_type = PDO_PARAM_STR;
+	stmt->columns[colno].namelen    = 0;
 
-	for (unsigned int i = 0; i < description.cf_defs.size (); i++)
-	{
-		for (unsigned int j = 0; j < description.cf_defs [i].column_metadata.size (); j++)
-		{
-			if ((*S->it).columns[colno].name == description.cf_defs [i].column_metadata [j].name)
-			{
-				if (!description.cf_defs [i].column_metadata [j].validation_class.compare("org.apache.cassandra.db.marshal.LongType") ||
-					!description.cf_defs [i].column_metadata [j].validation_class.compare("org.apache.cassandra.db.marshal.IntegerType"))
-				{
-					stmt->columns[colno].param_type = PDO_PARAM_INT;
-				}
-				else if (!description.cf_defs [i].column_metadata [j].validation_class.compare("org.apache.cassandra.db.marshal.BytesType"))
-				{
-					stmt->columns[colno].param_type = PDO_PARAM_LOB;
-				}
-				else
-				{
-					stmt->columns[colno].param_type = PDO_PARAM_STR;
+	for (size_t i = 0; i < H->description.cf_defs.size(); i++) {
+		for (size_t j = 0; j < H->description.cf_defs [i].column_metadata.size(); j++) {
+			if ((*S->it).columns[colno].name.size () == H->description.cf_defs [i].column_metadata [j].name.size () &&
+				!memcmp ((*S->it).columns[colno].name.c_str (), H->description.cf_defs [i].column_metadata [j].name.c_str (), (*S->it).columns[colno].name.size ())) {
+
+				pdo_cassandra_type value_type = pdo_cassandra_get_type(H->description.cf_defs [i].column_metadata [j].validation_class);
+
+				switch (value_type) {
+					case PDO_CASSANDRA_TYPE_LONG:
+					case PDO_CASSANDRA_TYPE_INTEGER:
+						stmt->columns[colno].param_type = PDO_PARAM_INT;
+						break;
+
+					default:
+						stmt->columns[colno].param_type = PDO_PARAM_STR;
+						break;
 				}
 			}			
 		}
 	}
 
-	stmt->columns[colno].name       = estrdup (const_cast <char *> ((*S->it).columns[colno].name.c_str()));
-	stmt->columns[colno].namelen    = (*S->it).columns[colno].name.size();
-	stmt->columns[colno].maxlen     = -1;
-	stmt->columns[colno].precision  = 0;
-
+	stmt->columns[colno].name      = estrndup (const_cast <char *> ((*S->it).columns[colno].name.c_str()), (*S->it).columns[colno].name.size());
+	stmt->columns[colno].namelen   = (*S->it).columns[colno].name.size();
+	stmt->columns[colno].precision = 0;
+	stmt->columns[colno].maxlen    = -1;
 	return 1;
 }
 /* }}} */
-
-int64_t pdo_cassandra_marshal_numeric (const std::string &test) 
-{
-	const unsigned char *bytes = reinterpret_cast <const unsigned char *>(test.c_str());
-
-	int64_t val = 0;
-	for (size_t i = 0; i < test.size (); i++)
-		val = val << 8 | bytes[i];
-
-	return val;
-}
 
 /** {{{ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr, unsigned long *len, int *caller_frees TSRMLS_DC)
 */
 static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr, unsigned long *len, int *caller_frees TSRMLS_DC)
 {
 	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
+	pdo_cassandra_db_handle *H = static_cast <pdo_cassandra_db_handle *>(S->H);
 
-	if (colno < 0 || (colno >= 0 && (static_cast <size_t>(colno) >= (*S->it).columns.size()))) {
-		return 0;
+	// This could be sparse column scenario, column is not set for this row
+	if (static_cast <size_t>(colno) >= (*S->it).columns.size()) {
+		pdo_cassandra_empty_column(stmt, colno);
+		return 1;
 	}
 
 	switch (stmt->columns[colno].param_type)
 	{
-		case PDO_PARAM_LOB:
-		case PDO_PARAM_STR:
-			*ptr = const_cast <char *> ((*S->it).columns[colno].value.c_str());
-			*len = (*S->it).columns[colno].value.size();
-			*caller_frees = 0;
-		break;
-
 		case PDO_PARAM_INT:
 		{
 			long value = (long) pdo_cassandra_marshal_numeric((*S->it).columns[colno].value);
-			long *p = (long *) emalloc(sizeof (long));
+			long *p    = (long *) emalloc(sizeof (long));
 			memcpy (p, &value, sizeof(long));
 
 			*len = sizeof(long);
@@ -183,9 +224,47 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
 		break;
 
 		default:
+			*ptr = const_cast <char *> ((*S->it).columns[colno].value.c_str());
+			*len = (*S->it).columns[colno].value.size();
+			*caller_frees = 0;
 		break;
 	}
 
+	// Key is always key 
+	if (!H->has_description) {
+		H->client->describe_keyspace(H->description, H->active_keyspace);
+		H->has_description = 1;
+	}
+
+	if (!(*S->it).columns[colno].name.compare(H->description.cf_defs [0].key_alias)) {
+		return 1;
+	}
+
+	pdo_cassandra_type name_type = pdo_cassandra_get_type(H->description.cf_defs [0].comparator_type);
+
+	if (name_type == PDO_CASSANDRA_TYPE_LONG || name_type == PDO_CASSANDRA_TYPE_INTEGER) {
+		char col [96];
+		size_t len;
+		long name = (long) pdo_cassandra_marshal_numeric((*S->it).columns[colno].name);
+		len = snprintf(col, 96, "%ld", name);
+
+		if (strcmp (col, stmt->columns[colno].name)) {
+			if (stmt->columns[colno].namelen) {
+				efree (stmt->columns[colno].name);
+			}
+			stmt->columns[colno].name    = estrdup (col);
+			stmt->columns[colno].namelen = len;
+		}
+	} else {
+		if ((*S->it).columns[colno].name.size() != stmt->columns[colno].namelen ||
+			memcmp ((*S->it).columns[colno].name.c_str(), stmt->columns[colno].name, stmt->columns[colno].namelen)) {
+			if (stmt->columns[colno].namelen) {
+				efree (stmt->columns[colno].name);
+			}
+			stmt->columns[colno].name    = estrndup (const_cast <char *> ((*S->it).columns[colno].name.c_str()), (*S->it).columns[colno].name.size());
+			stmt->columns[colno].namelen = (*S->it).columns[colno].name.size();
+		}
+	}
 	return 1;
 }
 /* }}} */
@@ -197,42 +276,41 @@ static int pdo_cassandra_stmt_get_column_meta(pdo_stmt_t *stmt, long colno, zval
 	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
 	pdo_cassandra_db_handle *H = static_cast <pdo_cassandra_db_handle *>(S->H);
 
-	if (colno < 0 || (colno >= 0 && (static_cast <size_t>(colno) >= (*S->it).columns.size()))) {
+	if (!S->result.get()->rows.size()) {
 		return FAILURE;
 	}
-
-	KsDef description;
-	H->client->describe_keyspace(description, H->active_keyspace);
-
 	array_init(return_value);
 
+	if (!H->has_description) {
+		H->client->describe_keyspace(H->description, H->active_keyspace);
+		H->has_description = 1;
+	}
+
 	bool found = false;
-	for (unsigned int i = 0; i < description.cf_defs.size (); i++)
-	{
-		for (unsigned int j = 0; j < description.cf_defs [i].column_metadata.size (); j++)
-		{
-			if ((*S->it).columns[colno].name.compare(description.cf_defs [i].column_metadata [j].name) == 0)
+	for (size_t i = 0; i < H->description.cf_defs.size(); i++) {
+		for (size_t j = 0; j < H->description.cf_defs [i].column_metadata.size(); j++) {
+			if (!(*S->it).columns[colno].name.compare(H->description.cf_defs [i].column_metadata [j].name))
 			{
 				found = true;
 				add_assoc_string(return_value,
 				                 "native_type",
-								 const_cast <char *> (description.cf_defs [i].column_metadata [j].validation_class.c_str()),
+								 const_cast <char *> (H->description.cf_defs [i].column_metadata [j].validation_class.c_str()),
 								 1);
 				add_assoc_string(return_value,
 				                 "comparator",
-								 const_cast <char *> (description.cf_defs [i].comparator_type.c_str()),
+								 const_cast <char *> (H->description.cf_defs [i].comparator_type.c_str()),
 								 1);
 				add_assoc_string(return_value,
 				                 "default_validation_class",
-								 const_cast <char *> (description.cf_defs [i].default_validation_class.c_str()),
+								 const_cast <char *> (H->description.cf_defs [i].default_validation_class.c_str()),
 								 1);
 				add_assoc_string(return_value,
 				                 "key_validation_class",
-								 const_cast <char *> (description.cf_defs [i].key_validation_class.c_str()),
+								 const_cast <char *> (H->description.cf_defs [i].key_validation_class.c_str()),
 								 1);
 				add_assoc_string(return_value,
 				                 "key_alias",
-								 const_cast <char *> (description.cf_defs [i].key_alias.c_str()),
+								 const_cast <char *> (H->description.cf_defs [i].key_alias.c_str()),
 								 1);
 			}
 		}
