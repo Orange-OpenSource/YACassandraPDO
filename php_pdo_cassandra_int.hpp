@@ -74,6 +74,8 @@ typedef struct {
 	boost::shared_ptr<CassandraClient> client;
 	pdo_cassandra_einfo einfo;
 	std::string active_keyspace;
+	KsDef description;
+	zend_bool has_description;
 } pdo_cassandra_db_handle;
 /* }}} */
 
@@ -118,6 +120,18 @@ enum pdo_cassandra_error {
 	PDO_CASSANDRA_SCHEMA_DISAGREEMENT,
 	PDO_CASSANDRA_TRANSPORT_ERROR,
 	PDO_CASSANDRA_INVALID_CONNECTION_STRING
+};
+
+enum pdo_cassandra_type {
+	PDO_CASSANDRA_TYPE_BYTES,
+	PDO_CASSANDRA_TYPE_ASCII,
+	PDO_CASSANDRA_TYPE_UTF8,
+	PDO_CASSANDRA_TYPE_INTEGER,
+	PDO_CASSANDRA_TYPE_LONG,
+	PDO_CASSANDRA_TYPE_UUID,
+	PDO_CASSANDRA_TYPE_LEXICAL,
+	PDO_CASSANDRA_TYPE_TIMEUUID,
+	PDO_CASSANDRA_TYPE_UNKNOWN
 };
 
 void pdo_cassandra_error_ex(pdo_dbh_t *dbh TSRMLS_DC, pdo_cassandra_error code, const char *file, int line, zend_bool force_exception, const char *message, ...);

@@ -230,6 +230,7 @@ static int pdo_cassandra_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSR
 	H->compression     = 0;
 	H->einfo.errcode   = 0;
 	H->einfo.errmsg    = NULL;
+	H->has_description = 0;
 
 	H->socket.reset(new TSocketPool);
 	H->transport.reset(new TFramedTransport(H->socket));
@@ -325,8 +326,10 @@ void pdo_cassandra_set_active_keyspace(pdo_cassandra_db_handle *H, const std::st
 	{
 		pch = php_strtok_r(NULL, " \t\n\r", &last);
 
-		if (pch && strlen (pch) > 0)
+		if (pch && strlen (pch) > 0) {
 			H->active_keyspace = pch;
+			H->has_description = 0;
+		}
 	}
 	efree(copy);
 }
