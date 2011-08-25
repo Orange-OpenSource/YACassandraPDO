@@ -44,6 +44,31 @@
    <file name="README.md" role="doc" />
    <file name="LICENSE" role="doc" />
    <file name="ChangeLog" role="doc" />
+
+   <!-- tests -->
+   <file name="001-construct.phpt" role="doc" />
+   <file name="002-select.phpt" role="doc" />
+   <file name="003-transaction.phpt" role="doc" />
+   <file name="004-columnmeta.phpt" role="doc" />
+   <file name="005-attributes.phpt" role="doc" />
+   <file name="006-iterate.phpt" role="doc" />
+   <file name="007-fetchgrouped.phpt" role="doc" />
+   <file name="008-executemultiple.phpt" role="doc" />
+   <file name="009-invaliddsn.phpt" role="doc" />
+   <file name="010-auth.phpt" role="doc" />
+   <file name="011-persistentconnection.phpt" role="doc" />
+   <file name="012-quoter.phpt" role="doc" />
+   <file name="013-errorhandling.phpt" role="doc" />
+   <file name="014-affectedrows.phpt" role="doc" />
+   <file name="015-lastinsertid.phpt" role="doc" />
+   <file name="016-bindparam.phpt" role="doc" />
+   <file name="017-sparsecolumns.phpt" role="doc" />
+   <file name="018-int.phpt" role="doc" />
+   <file name="019-uuid.phpt" role="doc" />
+   <file name="020-types.phpt" role="doc" />
+   <file name="021-comparators.phpt" role="doc" />
+   <file name="config.inc-dist" role="doc" />
+   <file name="skipif.inc" role="doc" />
   </dir>
  </contents>
  <dependencies>
