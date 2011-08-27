@@ -35,6 +35,7 @@ extern "C" {
 #include "pdo/php_pdo_driver.h"
 #include "ext/standard/url.h"
 #include "ext/standard/php_string.h"
+#include "ext/pcre/php_pcre.h"
 }
 
 #define HAVE_ZLIB_CP HAVE_ZLIB
@@ -48,10 +49,24 @@ extern "C" {
 #undef HAVE_ZLIB
 #define HAVE_ZLIB HAVE_ZLIB_CP
 
+#include <boost/bimap.hpp>
+
 using namespace apache::thrift;
 using namespace apache::thrift::protocol;
 using namespace apache::thrift::transport;
 using namespace org::apache::cassandra;
+
+enum pdo_cassandra_type {
+	PDO_CASSANDRA_TYPE_BYTES,
+	PDO_CASSANDRA_TYPE_ASCII,
+	PDO_CASSANDRA_TYPE_UTF8,
+	PDO_CASSANDRA_TYPE_INTEGER,
+	PDO_CASSANDRA_TYPE_LONG,
+	PDO_CASSANDRA_TYPE_UUID,
+	PDO_CASSANDRA_TYPE_LEXICAL,
+	PDO_CASSANDRA_TYPE_TIMEUUID,
+	PDO_CASSANDRA_TYPE_UNKNOWN
+};
 
 /** {{{
 */
@@ -79,6 +94,9 @@ typedef struct {
 } pdo_cassandra_db_handle;
 /* }}} */
 
+typedef boost::bimap<std::string, int> ColumnMap;
+typedef boost::bimap<std::string, pdo_param_type> ColumnTypeMap;
+
 /* {{{ typedef struct pdo_cassandra_stmt 
 */
 typedef struct {
@@ -86,6 +104,11 @@ typedef struct {
 	zend_bool has_iterator;
 	boost::shared_ptr<CqlResult> result;
 	std::vector<CqlRow>::iterator it;
+
+	ColumnMap original_column_names;
+	ColumnMap column_name_labels;
+
+	std::string active_columnfamily;
 } pdo_cassandra_stmt;
 /* }}} */
 
@@ -120,18 +143,6 @@ enum pdo_cassandra_error {
 	PDO_CASSANDRA_SCHEMA_DISAGREEMENT,
 	PDO_CASSANDRA_TRANSPORT_ERROR,
 	PDO_CASSANDRA_INVALID_CONNECTION_STRING
-};
-
-enum pdo_cassandra_type {
-	PDO_CASSANDRA_TYPE_BYTES,
-	PDO_CASSANDRA_TYPE_ASCII,
-	PDO_CASSANDRA_TYPE_UTF8,
-	PDO_CASSANDRA_TYPE_INTEGER,
-	PDO_CASSANDRA_TYPE_LONG,
-	PDO_CASSANDRA_TYPE_UUID,
-	PDO_CASSANDRA_TYPE_LEXICAL,
-	PDO_CASSANDRA_TYPE_TIMEUUID,
-	PDO_CASSANDRA_TYPE_UNKNOWN
 };
 
 void pdo_cassandra_error_ex(pdo_dbh_t *dbh TSRMLS_DC, pdo_cassandra_error code, const char *file, int line, zend_bool force_exception, const char *message, ...);

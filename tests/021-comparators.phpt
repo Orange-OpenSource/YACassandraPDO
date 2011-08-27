@@ -34,7 +34,7 @@ echo "OK";
 --EXPECT--
 array(2) {
   [0]=>
-  array(4) {
+  array(6) {
     ["my_key"]=>
     string(2) "bb"
     [30]=>
@@ -43,17 +43,25 @@ array(2) {
     string(9) "more more"
     [50]=>
     string(4) "more"
+    [10]=>
+    NULL
+    [20]=>
+    NULL
   }
   [1]=>
-  array(4) {
+  array(6) {
     ["my_key"]=>
     string(2) "aa"
+    [30]=>
+    NULL
+    [40]=>
+    NULL
+    [50]=>
+    NULL
     [10]=>
     string(5) "hello"
     [20]=>
     string(8) "hi there"
-    ["__column_not_set_3"]=>
-    NULL
   }
 }
 OK

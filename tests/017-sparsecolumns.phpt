@@ -13,96 +13,101 @@ pdo_cassandra_init ($db, $keyspace);
 $db->exec ("CREATE COLUMNFAMILY extended_users (
 			my_key varchar PRIMARY KEY);");
 
-$db->exec ("INSERT INTO extended_users(my_key, secondrowdata, thirdcolumn) VALUES('jane', 'Flat 2, Street 2', 'metadata')");
-$db->exec ("INSERT INTO extended_users(my_key, firstrowdata) VALUES('test user', 'Flat 1, Street 1')");
-$db->exec ("INSERT INTO extended_users(my_key, third) VALUES('more data', 'aaa')");
-$db->exec ("INSERT INTO extended_users(my_key, fourth, large, row) VALUES('xyz', 'large', 'row', 'data')");
-
+$db->exec ("INSERT INTO extended_users(my_key, third) VALUES('two columns', 'aaa')");
+$db->exec ("INSERT INTO extended_users(my_key, secondrowdata, thirdcolumn) VALUES('three columns', 'Flat 2, Street 2', 'metadata')");
+$db->exec ("INSERT INTO extended_users(my_key, fourth, large, row) VALUES('four columns', 'large', 'row', 'data')");
 
 $stmt = $db->prepare ("SELECT * FROM extended_users");
+
 $stmt->execute ();
-var_dump ($stmt->fetchAll ());			
-	
+var_dump ($stmt->fetchAll(PDO::FETCH_ASSOC));
+
+$stmt = $db->prepare ("SELECT * FROM extended_users WHERE my_key = :key");
+$stmt->bindValue (':key', 'two columns');
+$stmt->execute ();
+var_dump ($stmt->fetchAll(PDO::FETCH_ASSOC));
+
+$stmt->bindValue (':key', 'four columns');
+$stmt->execute ();
+var_dump ($stmt->fetchAll(PDO::FETCH_ASSOC));
+
 pdo_cassandra_done ($db, $keyspace);
 
 echo "OK";
 --EXPECT--
-array(4) {
+array(3) {
   [0]=>
-  array(8) {
+  array(7) {
     ["my_key"]=>
-    string(9) "test user"
-    [0]=>
-    string(9) "test user"
-    ["firstrowdata"]=>
-    string(16) "Flat 1, Street 1"
-    [1]=>
-    string(16) "Flat 1, Street 1"
-    ["__column_not_set_2"]=>
+    string(11) "two columns"
+    ["third"]=>
+    string(3) "aaa"
+    ["fourth"]=>
     NULL
-    [2]=>
+    ["large"]=>
     NULL
-    ["__column_not_set_3"]=>
+    ["row"]=>
     NULL
-    [3]=>
+    ["secondrowdata"]=>
+    NULL
+    ["thirdcolumn"]=>
     NULL
   }
   [1]=>
-  array(8) {
+  array(7) {
     ["my_key"]=>
-    string(9) "more data"
-    [0]=>
-    string(9) "more data"
+    string(12) "four columns"
     ["third"]=>
-    string(3) "aaa"
-    [1]=>
-    string(3) "aaa"
-    ["__column_not_set_2"]=>
     NULL
-    [2]=>
-    NULL
-    ["__column_not_set_3"]=>
-    NULL
-    [3]=>
-    NULL
-  }
-  [2]=>
-  array(8) {
-    ["my_key"]=>
-    string(3) "xyz"
-    [0]=>
-    string(3) "xyz"
     ["fourth"]=>
-    string(5) "large"
-    [1]=>
     string(5) "large"
     ["large"]=>
     string(3) "row"
-    [2]=>
-    string(3) "row"
     ["row"]=>
     string(4) "data"
-    [3]=>
-    string(4) "data"
-  }
-  [3]=>
-  array(8) {
-    ["my_key"]=>
-    string(4) "jane"
-    [0]=>
-    string(4) "jane"
     ["secondrowdata"]=>
-    string(16) "Flat 2, Street 2"
-    [1]=>
+    NULL
+    ["thirdcolumn"]=>
+    NULL
+  }
+  [2]=>
+  array(7) {
+    ["my_key"]=>
+    string(13) "three columns"
+    ["third"]=>
+    NULL
+    ["fourth"]=>
+    NULL
+    ["large"]=>
+    NULL
+    ["row"]=>
+    NULL
+    ["secondrowdata"]=>
     string(16) "Flat 2, Street 2"
     ["thirdcolumn"]=>
     string(8) "metadata"
-    [2]=>
-    string(8) "metadata"
-    ["__column_not_set_3"]=>
-    NULL
-    [3]=>
-    NULL
+  }
+}
+array(1) {
+  [0]=>
+  array(2) {
+    ["my_key"]=>
+    string(11) "two columns"
+    ["third"]=>
+    string(3) "aaa"
+  }
+}
+array(1) {
+  [0]=>
+  array(4) {
+    ["my_key"]=>
+    string(12) "four columns"
+    ["fourth"]=>
+    string(5) "large"
+    ["large"]=>
+    string(3) "row"
+    ["row"]=>
+    string(4) "data"
   }
 }
 OK
