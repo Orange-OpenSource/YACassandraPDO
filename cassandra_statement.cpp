@@ -20,7 +20,7 @@
 static pdo_param_type pdo_cassandra_get_type(const std::string &type);
 static int64_t pdo_cassandra_marshal_numeric(const std::string &test);
 
-#define PDO_CASSANDRA_CF_PATTERN "~\\s*SELECT\\s+.+?\\s+FROM\\s+'?(\\w+)~ims"
+#define PDO_CASSANDRA_CF_PATTERN "~\\s*SELECT\\s+.+?\\s+FROM\\s+[\\']?(\\w+)~ims"
 
 
 static zend_bool pdo_cassandra_describe_keyspace(pdo_stmt_t *stmt)
@@ -60,6 +60,8 @@ static zend_bool pdo_cassandra_describe_keyspace(pdo_stmt_t *stmt)
 	return 0;
 }
 
+/** {{{ static zend_bool pdo_cassandra_set_active_columnfamily(pdo_cassandra_stmt *S, const std::string &query)
+*/
 static zend_bool pdo_cassandra_set_active_columnfamily(pdo_cassandra_stmt *S, const std::string &query)
 {
 	zval *return_value, *sub_patterns;
@@ -99,7 +101,10 @@ static zend_bool pdo_cassandra_set_active_columnfamily(pdo_cassandra_stmt *S, co
 	zval_ptr_dtor(&sub_patterns);
 	return 0;
 }
+/* }}} */
 
+/** {{{
+*/
 static void pdo_cassandra_stmt_undescribe(pdo_stmt_t *stmt TSRMLS_DC)
 {
 	if (stmt->columns) {
@@ -121,6 +126,7 @@ static void pdo_cassandra_stmt_undescribe(pdo_stmt_t *stmt TSRMLS_DC)
 
 	stmt->executed = 0;
 }
+/* }}} */
 
 /** {{{ static int pdo_cassandra_stmt_execute(pdo_stmt_t *stmt TSRMLS_DC)
 */
@@ -178,7 +184,7 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
 	pdo_cassandra_db_handle *H = static_cast <pdo_cassandra_db_handle *>(S->H);
 
-	if (!stmt->executed || !S->result.get()->rows.size ()) {
+	if (!stmt->executed || !S->result.get()->rows.size()) {
 		return 0;
 	}
 
@@ -219,7 +225,7 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 						pdo_param_type name_type = pdo_cassandra_get_type((*cfdef_it).comparator_type);
 
 						if (name_type == PDO_PARAM_INT) {
-							char label [96];
+							char label[96];
 							size_t len;
 							long name = (long) pdo_cassandra_marshal_numeric((*col_it).name);
 							len = snprintf(label, 96, "%ld", name);
@@ -320,7 +326,7 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 
 		if (!current_column.compare((*cfdef_it).key_alias)) {
 			stmt->columns[colno].name       = estrndup(current_column.c_str(), current_column.size());
-			stmt->columns[colno].namelen    = current_column.size ();
+			stmt->columns[colno].namelen    = current_column.size();
 			stmt->columns[colno].precision  = 0;
 			stmt->columns[colno].maxlen     = -1;
 			return 1;
@@ -340,12 +346,12 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 
 	try {
 		std::string column_label(S->column_name_labels.right.at(colno));
-		stmt->columns[colno].name      = estrndup (const_cast <char *> (column_label.c_str()), column_label.size());
+		stmt->columns[colno].name      = estrndup(const_cast <char *> (column_label.c_str()), column_label.size());
 		stmt->columns[colno].namelen   = column_label.size();
 		stmt->columns[colno].precision = 0;
 		stmt->columns[colno].maxlen    = -1;
 	} catch (std::out_of_range &ex) {
-		stmt->columns[colno].name      = estrndup (const_cast <char *> (current_column.c_str()), current_column.size());
+		stmt->columns[colno].name      = estrndup(const_cast <char *> (current_column.c_str()), current_column.size());
 		stmt->columns[colno].namelen   = current_column.size();
 		stmt->columns[colno].precision = 0;
 		stmt->columns[colno].maxlen    = -1;
@@ -379,8 +385,8 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
 				case PDO_PARAM_INT:
 				{
 					long value = (long) pdo_cassandra_marshal_numeric((*col_it).value);
-					long *p    = (long *) emalloc(sizeof (long));
-					memcpy (p, &value, sizeof(long));
+					long *p    = (long *) emalloc(sizeof(long));
+					memcpy(p, &value, sizeof(long));
 
 					*ptr          = (char *)p;
 					*len          = sizeof(long);
