@@ -17,7 +17,7 @@
 #include "php_pdo_cassandra.hpp"
 #include "php_pdo_cassandra_int.hpp"
 
-static pdo_cassandra_type pdo_cassandra_get_type(const std::string &type);
+static pdo_param_type pdo_cassandra_get_type(const std::string &type);
 static int64_t pdo_cassandra_marshal_numeric(const std::string &test);
 
 #define PDO_CASSANDRA_CF_PATTERN "~\\s*SELECT\\s+.+?\\s+FROM\\s+'?(\\w+)~ims"
@@ -113,6 +113,12 @@ static void pdo_cassandra_stmt_undescribe(pdo_stmt_t *stmt TSRMLS_DC)
 		stmt->columns = NULL;
 		stmt->column_count = 0;
 	}
+
+	// Clear data
+	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
+	S->original_column_names.clear();
+	S->column_name_labels.clear();
+
 	stmt->executed = 0;
 }
 
@@ -210,9 +216,9 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 							continue;
 						}
 
-						pdo_cassandra_type name_type = pdo_cassandra_get_type((*cfdef_it).comparator_type);
+						pdo_param_type name_type = pdo_cassandra_get_type((*cfdef_it).comparator_type);
 
-						if (name_type == PDO_CASSANDRA_TYPE_LONG || name_type == PDO_CASSANDRA_TYPE_INTEGER) {
+						if (name_type == PDO_PARAM_INT) {
 							char label [96];
 							size_t len;
 							long name = (long) pdo_cassandra_marshal_numeric((*col_it).name);
@@ -242,26 +248,28 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 
 /** {{{ pdo_cassandra_type pdo_cassandra_get_type(const std::string &type)
 */
-static pdo_cassandra_type pdo_cassandra_get_type(const std::string &type)
+static pdo_param_type pdo_cassandra_get_type(const std::string &type)
 {
 	if (!type.compare("org.apache.cassandra.db.marshal.BytesType")) {
-		return PDO_CASSANDRA_TYPE_BYTES;
+		return PDO_PARAM_STR;
 	} else if (!type.compare("org.apache.cassandra.db.marshal.AsciiType")) {
-		return PDO_CASSANDRA_TYPE_ASCII;
+		return PDO_PARAM_STR;
 	} else if (!type.compare("org.apache.cassandra.db.marshal.UTF8Type")) {
-		return PDO_CASSANDRA_TYPE_UTF8;
+		return PDO_PARAM_STR;
 	} else if (!type.compare("org.apache.cassandra.db.marshal.IntegerType")) {
-		return PDO_CASSANDRA_TYPE_INTEGER;
+		return PDO_PARAM_INT;
 	} else if (!type.compare("org.apache.cassandra.db.marshal.LongType")) {
-		return PDO_CASSANDRA_TYPE_LONG;
+		return PDO_PARAM_INT;
 	} else if (!type.compare("org.apache.cassandra.db.marshal.UUIDType")) {
-		return PDO_CASSANDRA_TYPE_UUID;
+		return PDO_PARAM_STR;
 	} else if (!type.compare("org.apache.cassandra.db.marshal.LexicalType")) {
-		return PDO_CASSANDRA_TYPE_LEXICAL;
+		return PDO_PARAM_STR;
 	} else if (!type.compare("org.apache.cassandra.db.marshal.TimeUUIDType")) {
-		return PDO_CASSANDRA_TYPE_TIMEUUID;
+		return PDO_PARAM_STR;
+	} else if (!type.compare("org.apache.cassandra.db.marshal.CounterColumnType")) {
+		return PDO_PARAM_INT;
 	} else {
-		return PDO_CASSANDRA_TYPE_UNKNOWN;
+		return PDO_PARAM_STR;
 	}
 }
 /* }}} */
@@ -298,6 +306,8 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 	} catch (std::out_of_range &ex) {
 		return 0;
 	}
+
+	// assume string
 	stmt->columns[colno].param_type = PDO_PARAM_STR;
 
 	bool found = false;
@@ -319,18 +329,7 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 		for (std::vector<ColumnDef>::iterator columndef_it = (*cfdef_it).column_metadata.begin(); columndef_it < (*cfdef_it).column_metadata.end(); columndef_it++) {
 			if (!current_column.compare(0, current_column.size(), (*columndef_it).name.c_str(), (*columndef_it).name.size())) {
 
-				pdo_cassandra_type value_type = pdo_cassandra_get_type((*columndef_it).validation_class);
-
-				switch (value_type) {
-					case PDO_CASSANDRA_TYPE_LONG:
-					case PDO_CASSANDRA_TYPE_INTEGER:
-						stmt->columns[colno].param_type = PDO_PARAM_INT;
-						break;
-
-					default:
-						stmt->columns[colno].param_type = PDO_PARAM_STR;
-						break;
-				}
+				stmt->columns[colno].param_type = pdo_cassandra_get_type((*columndef_it).validation_class);
 				found = true;
 			}
 		}
