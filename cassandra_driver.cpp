@@ -320,7 +320,7 @@ static int pdo_cassandra_handle_prepare(pdo_dbh_t *dbh, const char *sql, long sq
 }
 /* }}} */
 
-std::string pdo_cassandra_get_first_sub_pattern(const std::string &subject, const std::string &pattern)
+std::string pdo_cassandra_get_first_sub_pattern(const std::string &subject, const std::string &pattern TSRMLS_DC)
 {
 	std::string ret;
 	zval *return_value, *sub_patterns;
@@ -356,10 +356,10 @@ std::string pdo_cassandra_get_first_sub_pattern(const std::string &subject, cons
 	return ret;
 }
 
-void pdo_cassandra_set_active_keyspace(pdo_cassandra_db_handle *H, const std::string &sql)
+void pdo_cassandra_set_active_keyspace(pdo_cassandra_db_handle *H, const std::string &sql TSRMLS_DC)
 {
 	std::string pattern("~USE\\s+[\\']?(\\w+)~ims");
-	std::string match = pdo_cassandra_get_first_sub_pattern(sql, pattern);
+	std::string match = pdo_cassandra_get_first_sub_pattern(sql, pattern TSRMLS_CC);
 
 	if (match.size () > 0) {
 		H->active_keyspace = match;
@@ -388,7 +388,7 @@ static long pdo_cassandra_handle_execute(pdo_dbh_t *dbh, const char *sql, long s
 		if (result.type == CqlResultType::INT) {
 			return result.num;
 		}
-		pdo_cassandra_set_active_keyspace(H, query);
+		pdo_cassandra_set_active_keyspace(H, query TSRMLS_CC);
 
 		return 0;
 	} catch (NotFoundException &e) {

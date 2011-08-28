@@ -84,6 +84,7 @@ if test "x${PHP_PDO_CASSANDRA}" != "xno"; then
   PHP_ADD_EXTENSION_DEP(pdo_cassandra, pcre)
   PHP_SUBST(PDO_CASSANDRA_SHARED_LIBADD)
   PHP_REQUIRE_CXX()
+  PHP_ADD_LIBRARY(stdc++, PDO_CASSANDRA_SHARED_LIBADD) 
   PHP_NEW_EXTENSION(pdo_cassandra, cassandra_driver.cpp cassandra_statement.cpp gen-cpp/Cassandra.cpp gen-cpp/cassandra_types.cpp, $ext_shared,,-Wall -Wno-write-strings)
 fi
 

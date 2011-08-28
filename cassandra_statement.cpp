@@ -20,7 +20,7 @@
 static pdo_param_type pdo_cassandra_get_type(const std::string &type);
 static int64_t pdo_cassandra_marshal_numeric(const std::string &test);
 
-static zend_bool pdo_cassandra_describe_keyspace(pdo_stmt_t *stmt)
+static zend_bool pdo_cassandra_describe_keyspace(pdo_stmt_t *stmt TSRMLS_DC)
 {
 	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
 	pdo_cassandra_db_handle *H = static_cast <pdo_cassandra_db_handle *>(S->H);
@@ -57,12 +57,12 @@ static zend_bool pdo_cassandra_describe_keyspace(pdo_stmt_t *stmt)
 	return 0;
 }
 
-/** {{{ static zend_bool pdo_cassandra_set_active_columnfamily(pdo_cassandra_stmt *S, const std::string &query)
+/** {{{ static zend_bool pdo_cassandra_set_active_columnfamily(pdo_cassandra_stmt *S, const std::string &query TSRMLS_DC)
 */
-static void pdo_cassandra_set_active_columnfamily(pdo_cassandra_stmt *S, const std::string &query)
+static void pdo_cassandra_set_active_columnfamily(pdo_cassandra_stmt *S, const std::string &query TSRMLS_DC)
 {
 	std::string pattern("~\\s*SELECT\\s+.+?\\s+FROM\\s+[\\']?(\\w+)~ims");
-	std::string match = pdo_cassandra_get_first_sub_pattern(query, pattern);
+	std::string match = pdo_cassandra_get_first_sub_pattern(query, pattern TSRMLS_CC);
 
 	if (match.size () > 0) {
 		S->active_columnfamily = match;
@@ -113,8 +113,8 @@ static int pdo_cassandra_stmt_execute(pdo_stmt_t *stmt TSRMLS_DC)
 		H->client->execute_cql_query(*S->result.get(), query, (H->compression ? Compression::GZIP : Compression::NONE));
 		S->has_iterator = 0;
 		stmt->row_count = S->result.get()->rows.size();
-		pdo_cassandra_set_active_keyspace(H, query);
-		pdo_cassandra_set_active_columnfamily(S, query);
+		pdo_cassandra_set_active_keyspace(H, query TSRMLS_CC);
+		pdo_cassandra_set_active_columnfamily(S, query TSRMLS_CC);
 
 		// Undescribe the result set because next time there might be different amount of columns
 		pdo_cassandra_stmt_undescribe(stmt TSRMLS_CC);
@@ -155,7 +155,7 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 		return 0;
 	}
 
-	if (!pdo_cassandra_describe_keyspace(stmt)) {
+	if (!pdo_cassandra_describe_keyspace(stmt TSRMLS_CC)) {
 		return 0;
 	}
 
@@ -264,7 +264,7 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
 	pdo_cassandra_db_handle *H = static_cast <pdo_cassandra_db_handle *>(S->H);
 
-	if (!pdo_cassandra_describe_keyspace(stmt)) {
+	if (!pdo_cassandra_describe_keyspace(stmt TSRMLS_CC)) {
 		return 0;
 	}
 
@@ -394,7 +394,7 @@ static int pdo_cassandra_stmt_get_column_meta(pdo_stmt_t *stmt, long colno, zval
 	}
 	array_init(return_value);
 
-	if (!pdo_cassandra_describe_keyspace(stmt)) {
+	if (!pdo_cassandra_describe_keyspace(stmt TSRMLS_CC)) {
 		return 0;
 	}
 
