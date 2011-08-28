@@ -96,7 +96,6 @@ typedef struct {
 /* }}} */
 
 typedef boost::bimap<std::string, int> ColumnMap;
-typedef boost::bimap<std::string, pdo_param_type> ColumnTypeMap;
 
 /* {{{ typedef struct pdo_cassandra_stmt 
 */
