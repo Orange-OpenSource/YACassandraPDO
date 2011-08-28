@@ -2,6 +2,8 @@
 - Sparse columns are now handled as an union
 - Added support for counters 
 - Added more tests
+- Added option to preserve original column values
+- Added the original column key to metadata
 
 0.1.2
 - Added proper support for numeric types

@@ -10,11 +10,11 @@
   <email>mkoppanen@php.net</email>
   <active>yes</active>
  </lead>
- <date>2011-08-25</date>
+ <date>2011-08-28</date>
  <time>12:00:00</time>
  <version>
-  <release>0.1.2</release>
-  <api>0.1.2</api>
+  <release>0.1.3</release>
+  <api>0.1.3</api>
  </version>
  <stability>
   <release>beta</release>
@@ -22,7 +22,11 @@
  </stability>
  <license>PHP License</license>
  <notes>
-- Fix issue where row count was used instead column count
+- Sparse columns are now handled as an union
+- Added support for counters 
+- Added more tests and included tests in package.xml
+- Added option to preserve original column values
+- Added the original column key to metadata
  </notes>
  <contents>
   <dir name="/">
