@@ -91,8 +91,6 @@ typedef struct {
 	std::string active_keyspace;
 	KsDef description;
 	zend_bool has_description;
-	
-	zend_bool preserve_keys;
 	zend_bool preserve_values;
 } pdo_cassandra_db_handle;
 /* }}} */
