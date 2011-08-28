@@ -65,11 +65,7 @@ static zend_bool pdo_cassandra_describe_keyspace(pdo_stmt_t *stmt)
 static zend_bool pdo_cassandra_set_active_columnfamily(pdo_cassandra_stmt *S, const std::string &query)
 {
 	zval *return_value, *sub_patterns;
-	long flags = 0;
 	pcre_cache_entry *pce;
-
-	flags |= PCRE_MULTILINE;
-	flags |= PCRE_CASELESS;
 
 	if ((pce = pcre_get_compiled_regex_cache(PDO_CASSANDRA_CF_PATTERN, sizeof(PDO_CASSANDRA_CF_PATTERN) - 1 TSRMLS_CC)) == NULL) {
 		return 0;
@@ -84,11 +80,10 @@ static zend_bool pdo_cassandra_set_active_columnfamily(pdo_cassandra_stmt *S, co
 
 		if (zend_hash_index_exists(Z_ARRVAL_P(sub_patterns), (ulong) 1)) {
 			zval **data = NULL;
-
 			if (zend_hash_index_find(Z_ARRVAL_P(sub_patterns), (ulong) 1, (void**)&data) == SUCCESS) {
 				if (Z_TYPE_PP(data) == IS_ARRAY) {
 					if (zend_hash_index_exists(Z_ARRVAL_PP(data), (ulong) 0)) {
-						zval **match;
+						zval **match = NULL;
 						if (zend_hash_index_find(Z_ARRVAL_PP(data), (ulong) 0, (void**)&match) == SUCCESS) {
 							S->active_columnfamily = Z_STRVAL_PP(match);
 						}
@@ -103,7 +98,7 @@ static zend_bool pdo_cassandra_set_active_columnfamily(pdo_cassandra_stmt *S, co
 }
 /* }}} */
 
-/** {{{
+/** {{{ static void pdo_cassandra_stmt_undescribe(pdo_stmt_t *stmt TSRMLS_DC)
 */
 static void pdo_cassandra_stmt_undescribe(pdo_stmt_t *stmt TSRMLS_DC)
 {
@@ -214,14 +209,9 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 					for (std::vector<CfDef>::iterator cfdef_it = H->description.cf_defs.begin(); cfdef_it < H->description.cf_defs.end(); cfdef_it++) {
 
 						// Only interested in the currently active CF
-						if ((*cfdef_it).name.compare(S->active_columnfamily)) {
+						if ((*cfdef_it).name.compare(S->active_columnfamily) || !(*col_it).name.compare((*cfdef_it).key_alias)) {
 							continue;
 						}
-						// Not touching key
-						else if (!(*col_it).name.compare((*cfdef_it).key_alias)) {
-							continue;
-						}
-
 						pdo_param_type name_type = pdo_cassandra_get_type((*cfdef_it).comparator_type);
 
 						if (name_type == PDO_PARAM_INT) {
