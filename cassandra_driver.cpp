@@ -231,6 +231,7 @@ static int pdo_cassandra_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSR
 	H->einfo.errcode   = 0;
 	H->einfo.errmsg    = NULL;
 	H->has_description = 0;
+	H->preserve_values = 0;
 
 	H->socket.reset(new TSocketPool);
 	H->transport.reset(new TFramedTransport(H->socket));
@@ -251,6 +252,10 @@ static int pdo_cassandra_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSR
 		} else {
 			// Disable output from thrift library
 			pdo_cassandra_toggle_thrift_debug(0);
+		}
+
+		if (pdo_attr_lval(driver_options, static_cast <pdo_attribute_type>(PDO_CASSANDRA_ATTR_PRESERVE_VALUES), 0 TSRMLS_CC)) {
+			H->preserve_values = 1;
 		}
 	}
 
@@ -508,6 +513,11 @@ static int pdo_cassandra_handle_set_attribute(pdo_dbh_t *dbh, long attr, zval *v
 			}
 		break;
 
+		case PDO_CASSANDRA_ATTR_PRESERVE_VALUES:
+			convert_to_boolean(val);
+			H->preserve_values = Z_BVAL_P(val);
+		break;
+
 		default:
 			return 0;
 	}
@@ -569,6 +579,7 @@ PHP_MINIT_FUNCTION(pdo_cassandra)
 	PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_ATTR_SEND_TIMEOUT",				PDO_CASSANDRA_ATTR_SEND_TIMEOUT);
 	PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_ATTR_COMPRESSION",					PDO_CASSANDRA_ATTR_COMPRESSION);
 	PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_ATTR_THRIFT_DEBUG",				PDO_CASSANDRA_ATTR_THRIFT_DEBUG);
+	PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_ATTR_PRESERVE_VALUES",				PDO_CASSANDRA_ATTR_PRESERVE_VALUES);
 
 #undef PHP_PDO_CASSANDRA_REGISTER_CONST_LONG
 

@@ -91,6 +91,9 @@ typedef struct {
 	std::string active_keyspace;
 	KsDef description;
 	zend_bool has_description;
+	
+	zend_bool preserve_keys;
+	zend_bool preserve_values;
 } pdo_cassandra_db_handle;
 /* }}} */
 
@@ -128,6 +131,7 @@ enum pdo_cassandra_constant {
 	PDO_CASSANDRA_ATTR_SEND_TIMEOUT,
 	PDO_CASSANDRA_ATTR_COMPRESSION,
 	PDO_CASSANDRA_ATTR_THRIFT_DEBUG,
+	PDO_CASSANDRA_ATTR_PRESERVE_VALUES,
 	PDO_CASSANDRA_ATTR_MAX
 };
 /* }}} */

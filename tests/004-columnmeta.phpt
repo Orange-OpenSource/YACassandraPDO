@@ -70,7 +70,7 @@ array(5) {
   ["pdo_type"]=>
   int(2)
 }
-array(9) {
+array(10) {
   ["native_type"]=>
   string(41) "org.apache.cassandra.db.marshal.BytesType"
   ["comparator"]=>
@@ -81,6 +81,8 @@ array(9) {
   string(40) "org.apache.cassandra.db.marshal.UTF8Type"
   ["key_alias"]=>
   string(6) "my_key"
+  ["original_column_name"]=>
+  string(8) "my_bytea"
   ["name"]=>
   string(8) "my_bytea"
   ["len"]=>
@@ -90,7 +92,7 @@ array(9) {
   ["pdo_type"]=>
   int(2)
 }
-array(9) {
+array(10) {
   ["native_type"]=>
   string(41) "org.apache.cassandra.db.marshal.AsciiType"
   ["comparator"]=>
@@ -101,6 +103,8 @@ array(9) {
   string(40) "org.apache.cassandra.db.marshal.UTF8Type"
   ["key_alias"]=>
   string(6) "my_key"
+  ["original_column_name"]=>
+  string(8) "my_ascii"
   ["name"]=>
   string(8) "my_ascii"
   ["len"]=>
@@ -110,7 +114,7 @@ array(9) {
   ["pdo_type"]=>
   int(2)
 }
-array(9) {
+array(10) {
   ["native_type"]=>
   string(40) "org.apache.cassandra.db.marshal.UTF8Type"
   ["comparator"]=>
@@ -121,6 +125,8 @@ array(9) {
   string(40) "org.apache.cassandra.db.marshal.UTF8Type"
   ["key_alias"]=>
   string(6) "my_key"
+  ["original_column_name"]=>
+  string(7) "my_text"
   ["name"]=>
   string(7) "my_text"
   ["len"]=>
@@ -130,7 +136,7 @@ array(9) {
   ["pdo_type"]=>
   int(2)
 }
-array(9) {
+array(10) {
   ["native_type"]=>
   string(40) "org.apache.cassandra.db.marshal.UTF8Type"
   ["comparator"]=>
@@ -141,6 +147,8 @@ array(9) {
   string(40) "org.apache.cassandra.db.marshal.UTF8Type"
   ["key_alias"]=>
   string(6) "my_key"
+  ["original_column_name"]=>
+  string(10) "my_varchar"
   ["name"]=>
   string(10) "my_varchar"
   ["len"]=>
@@ -150,7 +158,7 @@ array(9) {
   ["pdo_type"]=>
   int(2)
 }
-array(9) {
+array(10) {
   ["native_type"]=>
   string(40) "org.apache.cassandra.db.marshal.UUIDType"
   ["comparator"]=>
@@ -161,6 +169,8 @@ array(9) {
   string(40) "org.apache.cassandra.db.marshal.UTF8Type"
   ["key_alias"]=>
   string(6) "my_key"
+  ["original_column_name"]=>
+  string(7) "my_uuid"
   ["name"]=>
   string(7) "my_uuid"
   ["len"]=>
@@ -170,7 +180,7 @@ array(9) {
   ["pdo_type"]=>
   int(2)
 }
-array(9) {
+array(10) {
   ["native_type"]=>
   string(43) "org.apache.cassandra.db.marshal.IntegerType"
   ["comparator"]=>
@@ -181,6 +191,8 @@ array(9) {
   string(40) "org.apache.cassandra.db.marshal.UTF8Type"
   ["key_alias"]=>
   string(6) "my_key"
+  ["original_column_name"]=>
+  string(9) "my_varint"
   ["name"]=>
   string(9) "my_varint"
   ["len"]=>
@@ -190,7 +202,7 @@ array(9) {
   ["pdo_type"]=>
   int(1)
 }
-array(9) {
+array(10) {
   ["native_type"]=>
   string(40) "org.apache.cassandra.db.marshal.LongType"
   ["comparator"]=>
@@ -201,6 +213,8 @@ array(9) {
   string(40) "org.apache.cassandra.db.marshal.UTF8Type"
   ["key_alias"]=>
   string(6) "my_key"
+  ["original_column_name"]=>
+  string(6) "my_int"
   ["name"]=>
   string(6) "my_int"
   ["len"]=>
@@ -210,7 +224,7 @@ array(9) {
   ["pdo_type"]=>
   int(1)
 }
-array(9) {
+array(10) {
   ["native_type"]=>
   string(40) "org.apache.cassandra.db.marshal.LongType"
   ["comparator"]=>
@@ -221,6 +235,8 @@ array(9) {
   string(40) "org.apache.cassandra.db.marshal.UTF8Type"
   ["key_alias"]=>
   string(6) "my_key"
+  ["original_column_name"]=>
+  string(9) "my_bigint"
   ["name"]=>
   string(9) "my_bigint"
   ["len"]=>

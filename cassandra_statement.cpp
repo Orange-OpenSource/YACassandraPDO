@@ -22,7 +22,6 @@ static int64_t pdo_cassandra_marshal_numeric(const std::string &test);
 
 #define PDO_CASSANDRA_CF_PATTERN "~\\s*SELECT\\s+.+?\\s+FROM\\s+[\\']?(\\w+)~ims"
 
-
 static zend_bool pdo_cassandra_describe_keyspace(pdo_stmt_t *stmt)
 {
 	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
@@ -303,30 +302,33 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 		return 0;
 	}
 
-	// assume string
-	stmt->columns[colno].param_type = PDO_PARAM_STR;
 
-	bool found = false;
 	for (std::vector<CfDef>::iterator cfdef_it = H->description.cf_defs.begin(); cfdef_it < H->description.cf_defs.end(); cfdef_it++) {
+
+		bool found = false;
+		stmt->columns[colno].param_type = (H->preserve_values) ? PDO_PARAM_STR : pdo_cassandra_get_type((*cfdef_it).default_validation_class);
 
 		// Only interested in the currently active CF
 		if ((*cfdef_it).name.compare(S->active_columnfamily)) {
 			continue;
 		}
-
-		if (!current_column.compare((*cfdef_it).key_alias)) {
+		// If this is the key alias or we are preserving keys
+		else if (!current_column.compare((*cfdef_it).key_alias)) {
 			stmt->columns[colno].name       = estrndup(current_column.c_str(), current_column.size());
 			stmt->columns[colno].namelen    = current_column.size();
 			stmt->columns[colno].precision  = 0;
 			stmt->columns[colno].maxlen     = -1;
+			stmt->columns[colno].param_type = PDO_PARAM_STR;
 			return 1;
 		}
 
-		for (std::vector<ColumnDef>::iterator columndef_it = (*cfdef_it).column_metadata.begin(); columndef_it < (*cfdef_it).column_metadata.end(); columndef_it++) {
-			if (!current_column.compare(0, current_column.size(), (*columndef_it).name.c_str(), (*columndef_it).name.size())) {
+		if (!(H->preserve_values)) {
+			for (std::vector<ColumnDef>::iterator columndef_it = (*cfdef_it).column_metadata.begin(); columndef_it < (*cfdef_it).column_metadata.end(); columndef_it++) {
+				if (!current_column.compare(0, current_column.size(), (*columndef_it).name.c_str(), (*columndef_it).name.size())) {
 
-				stmt->columns[colno].param_type = pdo_cassandra_get_type((*columndef_it).validation_class);
-				found = true;
+					stmt->columns[colno].param_type = pdo_cassandra_get_type((*columndef_it).validation_class);
+					found = true;
+				}
 			}
 		}
 		if (found) {
@@ -340,6 +342,7 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 		stmt->columns[colno].namelen   = column_label.size();
 		stmt->columns[colno].precision = 0;
 		stmt->columns[colno].maxlen    = -1;
+		return 1;
 	} catch (std::out_of_range &ex) {
 		stmt->columns[colno].name      = estrndup(const_cast <char *> (current_column.c_str()), current_column.size());
 		stmt->columns[colno].namelen   = current_column.size();
@@ -437,8 +440,7 @@ static int pdo_cassandra_stmt_get_column_meta(pdo_stmt_t *stmt, long colno, zval
 								 1);
 				break;
 			}
-
-			if (!current_column.compare(0, current_column.size(), (*columndef_it).name.c_str(), (*columndef_it).name.size())) {
+			else if (!current_column.compare(0, current_column.size(), (*columndef_it).name.c_str(), (*columndef_it).name.size())) {
 				found = true;
 				add_assoc_string(return_value,
 				                 "native_type",
@@ -456,9 +458,15 @@ static int pdo_cassandra_stmt_get_column_meta(pdo_stmt_t *stmt, long colno, zval
 				                 "key_validation_class",
 								 const_cast <char *> ((*cfdef_it).key_validation_class.c_str()),
 								 1);
-				add_assoc_string(return_value,
+				add_assoc_stringl(return_value,
 				                 "key_alias",
 								 const_cast <char *> ((*cfdef_it).key_alias.c_str()),
+								 (*cfdef_it).key_alias.size(),
+								 1);
+				add_assoc_stringl(return_value,
+				                 "original_column_name",
+								 const_cast <char *> (current_column.c_str()),
+								 current_column.size(),
 								 1);
 				break;
 			}
