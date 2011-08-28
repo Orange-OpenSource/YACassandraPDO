@@ -20,8 +20,6 @@
 static pdo_param_type pdo_cassandra_get_type(const std::string &type);
 static int64_t pdo_cassandra_marshal_numeric(const std::string &test);
 
-#define PDO_CASSANDRA_CF_PATTERN "~\\s*SELECT\\s+.+?\\s+FROM\\s+[\\']?(\\w+)~ims"
-
 static zend_bool pdo_cassandra_describe_keyspace(pdo_stmt_t *stmt)
 {
 	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
@@ -61,39 +59,14 @@ static zend_bool pdo_cassandra_describe_keyspace(pdo_stmt_t *stmt)
 
 /** {{{ static zend_bool pdo_cassandra_set_active_columnfamily(pdo_cassandra_stmt *S, const std::string &query)
 */
-static zend_bool pdo_cassandra_set_active_columnfamily(pdo_cassandra_stmt *S, const std::string &query)
+static void pdo_cassandra_set_active_columnfamily(pdo_cassandra_stmt *S, const std::string &query)
 {
-	zval *return_value, *sub_patterns;
-	pcre_cache_entry *pce;
+	std::string pattern("~\\s*SELECT\\s+.+?\\s+FROM\\s+[\\']?(\\w+)~ims");
+	std::string match = pdo_cassandra_get_first_sub_pattern(query, pattern);
 
-	if ((pce = pcre_get_compiled_regex_cache(PDO_CASSANDRA_CF_PATTERN, sizeof(PDO_CASSANDRA_CF_PATTERN) - 1 TSRMLS_CC)) == NULL) {
-		return 0;
+	if (match.size () > 0) {
+		S->active_columnfamily = match;
 	}
-
-	MAKE_STD_ZVAL(return_value);
-	ALLOC_INIT_ZVAL(sub_patterns);
-
-	php_pcre_match_impl(pce, const_cast<char *>(query.c_str()), query.size(), return_value, sub_patterns, 1, 1, 0, 0 TSRMLS_CC);
-
-	if ((Z_LVAL_P(return_value) > 0) && (Z_TYPE_P(sub_patterns) == IS_ARRAY)) {
-
-		if (zend_hash_index_exists(Z_ARRVAL_P(sub_patterns), (ulong) 1)) {
-			zval **data = NULL;
-			if (zend_hash_index_find(Z_ARRVAL_P(sub_patterns), (ulong) 1, (void**)&data) == SUCCESS) {
-				if (Z_TYPE_PP(data) == IS_ARRAY) {
-					if (zend_hash_index_exists(Z_ARRVAL_PP(data), (ulong) 0)) {
-						zval **match = NULL;
-						if (zend_hash_index_find(Z_ARRVAL_PP(data), (ulong) 0, (void**)&match) == SUCCESS) {
-							S->active_columnfamily = Z_STRVAL_PP(match);
-						}
-					}
-				}
-			}
-		}
-	}
-	zval_ptr_dtor(&return_value);
-	zval_ptr_dtor(&sub_patterns);
-	return 0;
 }
 /* }}} */
 

@@ -151,5 +151,6 @@ void pdo_cassandra_error_ex(pdo_dbh_t *dbh TSRMLS_DC, pdo_cassandra_error code, 
 #define pdo_cassandra_error_exception(dbh, code, message, ...) pdo_cassandra_error_ex(dbh TSRMLS_CC, code, __FILE__, __LINE__, 1, message, __VA_ARGS__)
 
 void pdo_cassandra_set_active_keyspace(pdo_cassandra_db_handle *H, const std::string &sql);
+std::string pdo_cassandra_get_first_sub_pattern(const std::string &subject, const std::string &pattern);
 
 #endif /* _PHP_PDO_CASSANDRA_PRIVATE_H_ */

@@ -320,23 +320,52 @@ static int pdo_cassandra_handle_prepare(pdo_dbh_t *dbh, const char *sql, long sq
 }
 /* }}} */
 
-void pdo_cassandra_set_active_keyspace(pdo_cassandra_db_handle *H, const std::string &sql)
+std::string pdo_cassandra_get_first_sub_pattern(const std::string &subject, const std::string &pattern)
 {
-	char *copy = estrndup(sql.c_str (), sql.size ());
-	char *pch, *last = NULL;
+	std::string ret;
+	zval *return_value, *sub_patterns;
+	pcre_cache_entry *pce;
 
-	pch = php_strtok_r(copy, " \t\n\r", &last);
+	if ((pce = pcre_get_compiled_regex_cache(const_cast<char *>(pattern.c_str()), pattern.size() TSRMLS_CC)) == NULL) {
+		return ret;
+	}
 
-	if (pch && strncasecmp (pch, "USE", 3) == 0)
-	{
-		pch = php_strtok_r(NULL, " \t\n\r", &last);
+	MAKE_STD_ZVAL(return_value);
+	ALLOC_INIT_ZVAL(sub_patterns);
 
-		if (pch && strlen (pch) > 0) {
-			H->active_keyspace = pch;
-			H->has_description = 0;
+	php_pcre_match_impl(pce, const_cast<char *>(subject.c_str()), subject.size(), return_value, sub_patterns, 1, 1, 0, 0 TSRMLS_CC);
+
+	if ((Z_LVAL_P(return_value) > 0) && (Z_TYPE_P(sub_patterns) == IS_ARRAY)) {
+
+		if (zend_hash_index_exists(Z_ARRVAL_P(sub_patterns), (ulong) 1)) {
+			zval **data = NULL;
+			if (zend_hash_index_find(Z_ARRVAL_P(sub_patterns), (ulong) 1, (void**)&data) == SUCCESS) {
+				if (Z_TYPE_PP(data) == IS_ARRAY) {
+					if (zend_hash_index_exists(Z_ARRVAL_PP(data), (ulong) 0)) {
+						zval **match = NULL;
+						if (zend_hash_index_find(Z_ARRVAL_PP(data), (ulong) 0, (void**)&match) == SUCCESS) {
+							ret = Z_STRVAL_PP(match);
+						}
+					}
+				}
+			}
 		}
 	}
-	efree(copy);
+	zval_ptr_dtor(&return_value);
+	zval_ptr_dtor(&sub_patterns);
+	return ret;
+}
+
+void pdo_cassandra_set_active_keyspace(pdo_cassandra_db_handle *H, const std::string &sql)
+{
+	std::string pattern("~USE\\s+[\\']?(\\w+)~ims");
+	std::string match = pdo_cassandra_get_first_sub_pattern(sql, pattern);
+
+	if (match.size () > 0) {
+		H->active_keyspace = match;
+		// USE statement invalidates the current cache
+		H->has_description = 0;
+	}
 }
 
 /** {{{ static long pdo_cassandra_handle_execute(pdo_dbh_t *dbh, const char *sql, long sql_len TSRMLS_DC)
