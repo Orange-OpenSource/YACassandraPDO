@@ -50,6 +50,8 @@ extern "C" {
 #define HAVE_ZLIB HAVE_ZLIB_CP
 
 #include <boost/bimap.hpp>
+#include <iostream>
+#include <string>
 
 using namespace apache::thrift;
 using namespace apache::thrift::protocol;

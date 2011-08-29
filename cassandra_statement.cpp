@@ -171,7 +171,7 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 							}
 							pdo_param_type name_type = pdo_cassandra_get_type((*cfdef_it).comparator_type);
 
-							if (name_type == PDO_PARAM_INT) {
+							if (name_type == PDO_PARAM_INT && (*col_it).name.size() <= 8) {
 								char label[96];
 								size_t len;
 								long name = (long) pdo_cassandra_marshal_numeric((*col_it).name);
@@ -232,6 +232,10 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
 */
 static int64_t pdo_cassandra_marshal_numeric(const std::string &test) 
 {
+	if (test.size() > 8) {
+		return (int64_t) LONG_MIN;
+	}
+
 	const unsigned char *bytes = reinterpret_cast <const unsigned char *>(test.c_str());
 
 	int64_t val = 0;
