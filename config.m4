@@ -9,6 +9,8 @@ PHP_ARG_WITH(boost-dir,    optional boost install prefix,
 
 if test "x${PHP_PDO_CASSANDRA}" != "xno"; then
   
+  PHP_REQUIRE_CXX()
+  
   if test "x${PHP_PDO}" = "xno" && test "x${ext_shared}" = "xno"; then
     AC_MSG_ERROR([PDO is not enabled. Add --enable-pdo to your configure line.])
   fi
@@ -82,9 +84,9 @@ if test "x${PHP_PDO_CASSANDRA}" != "xno"; then
   
   PHP_ADD_EXTENSION_DEP(pdo_cassandra, pdo)
   PHP_ADD_EXTENSION_DEP(pdo_cassandra, pcre)
+  
+  PHP_ADD_LIBRARY(stdc++, PDO_CASSANDRA_SHARED_LIBADD)
   PHP_SUBST(PDO_CASSANDRA_SHARED_LIBADD)
-  PHP_REQUIRE_CXX()
-  PHP_ADD_LIBRARY(stdc++, PDO_CASSANDRA_SHARED_LIBADD) 
   PHP_NEW_EXTENSION(pdo_cassandra, cassandra_driver.cpp cassandra_statement.cpp gen-cpp/Cassandra.cpp gen-cpp/cassandra_types.cpp, $ext_shared,,-Wall -Wno-write-strings)
 fi
 

@@ -57,19 +57,6 @@ static zend_bool pdo_cassandra_describe_keyspace(pdo_stmt_t *stmt TSRMLS_DC)
 	return 0;
 }
 
-/** {{{ static zend_bool pdo_cassandra_set_active_columnfamily(pdo_cassandra_stmt *S, const std::string &query TSRMLS_DC)
-*/
-static void pdo_cassandra_set_active_columnfamily(pdo_cassandra_stmt *S, const std::string &query TSRMLS_DC)
-{
-	std::string pattern("~\\s*SELECT\\s+.+?\\s+FROM\\s+[\\']?(\\w+)~ims");
-	std::string match = pdo_cassandra_get_first_sub_pattern(query, pattern TSRMLS_CC);
-
-	if (match.size () > 0) {
-		S->active_columnfamily = match;
-	}
-}
-/* }}} */
-
 /** {{{ static void pdo_cassandra_stmt_undescribe(pdo_stmt_t *stmt TSRMLS_DC)
 */
 static void pdo_cassandra_stmt_undescribe(pdo_stmt_t *stmt TSRMLS_DC)
@@ -114,7 +101,7 @@ static int pdo_cassandra_stmt_execute(pdo_stmt_t *stmt TSRMLS_DC)
 		S->has_iterator = 0;
 		stmt->row_count = S->result.get()->rows.size();
 		pdo_cassandra_set_active_keyspace(H, query TSRMLS_CC);
-		pdo_cassandra_set_active_columnfamily(S, query TSRMLS_CC);
+		pdo_cassandra_set_active_columnfamily(H, query TSRMLS_CC);
 
 		// Undescribe the result set because next time there might be different amount of columns
 		pdo_cassandra_stmt_undescribe(stmt TSRMLS_CC);
@@ -155,47 +142,46 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 		return 0;
 	}
 
-	if (!pdo_cassandra_describe_keyspace(stmt TSRMLS_CC)) {
-		return 0;
-	}
-
 	if (!S->has_iterator) {
 		S->it = S->result.get()->rows.begin();
 		S->has_iterator = 1;
 
-		// Clear data
-		S->original_column_names.clear();
-		S->column_name_labels.clear();
+		// Set column names and labels if we don't have them already
+		if (!S->original_column_names.size()) {
+			int order = 0;
 
-		int order = 0;
+			if (!pdo_cassandra_describe_keyspace(stmt TSRMLS_CC)) {
+				return 0;
+			}
 
-		// Get unique column names
-		for (std::vector<CqlRow>::iterator it = S->result.get()->rows.begin(); it < S->result.get()->rows.end(); it++) {
-			for (std::vector<Column>::iterator col_it = (*it).columns.begin(); col_it < (*it).columns.end(); col_it++) {
-				try {
-					S->original_column_names.left.at((*col_it).name);
-				} catch (std::out_of_range &ex) {
-					S->original_column_names.insert(ColumnMap::value_type((*col_it).name, order));
+			// Get unique column names
+			for (std::vector<CqlRow>::iterator it = S->result.get()->rows.begin(); it < S->result.get()->rows.end(); it++) {
+				for (std::vector<Column>::iterator col_it = (*it).columns.begin(); col_it < (*it).columns.end(); col_it++) {
+					try {
+						S->original_column_names.left.at((*col_it).name);
+					} catch (std::out_of_range &ex) {
+						S->original_column_names.insert(ColumnMap::value_type((*col_it).name, order));
 
-					// Marshal the data according to comparator
-					for (std::vector<CfDef>::iterator cfdef_it = H->description.cf_defs.begin(); cfdef_it < H->description.cf_defs.end(); cfdef_it++) {
+						// Marshal the data according to comparator
+						for (std::vector<CfDef>::iterator cfdef_it = H->description.cf_defs.begin(); cfdef_it < H->description.cf_defs.end(); cfdef_it++) {
 
-						// Only interested in the currently active CF
-						if ((*cfdef_it).name.compare(S->active_columnfamily) || !(*col_it).name.compare((*cfdef_it).key_alias)) {
-							continue;
+							// Only interested in the currently active CF
+							if ((*cfdef_it).name.compare(H->active_columnfamily) || !(*col_it).name.compare((*cfdef_it).key_alias)) {
+								continue;
+							}
+							pdo_param_type name_type = pdo_cassandra_get_type((*cfdef_it).comparator_type);
+
+							if (name_type == PDO_PARAM_INT) {
+								char label[96];
+								size_t len;
+								long name = (long) pdo_cassandra_marshal_numeric((*col_it).name);
+								len = snprintf(label, 96, "%ld", name);
+								S->column_name_labels.insert(ColumnMap::value_type(std::string(label, len), order));
+								break;
+							}
 						}
-						pdo_param_type name_type = pdo_cassandra_get_type((*cfdef_it).comparator_type);
-
-						if (name_type == PDO_PARAM_INT) {
-							char label[96];
-							size_t len;
-							long name = (long) pdo_cassandra_marshal_numeric((*col_it).name);
-							len = snprintf(label, 96, "%ld", name);
-							S->column_name_labels.insert(ColumnMap::value_type(std::string(label, len), order));
-							break;
-						}
+						++order;
 					}
-					++order;
 				}
 			}
 		}
@@ -264,10 +250,6 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
 	pdo_cassandra_db_handle *H = static_cast <pdo_cassandra_db_handle *>(S->H);
 
-	if (!pdo_cassandra_describe_keyspace(stmt TSRMLS_CC)) {
-		return 0;
-	}
-
 	std::string current_column;
 	try {
 		current_column = S->original_column_names.right.at(colno);
@@ -275,14 +257,16 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 		return 0;
 	}
 
+	if (!pdo_cassandra_describe_keyspace(stmt TSRMLS_CC)) {
+		return 0;
+	}
 
 	for (std::vector<CfDef>::iterator cfdef_it = H->description.cf_defs.begin(); cfdef_it < H->description.cf_defs.end(); cfdef_it++) {
-
 		bool found = false;
 		stmt->columns[colno].param_type = (H->preserve_values) ? PDO_PARAM_STR : pdo_cassandra_get_type((*cfdef_it).default_validation_class);
 
 		// Only interested in the currently active CF
-		if ((*cfdef_it).name.compare(S->active_columnfamily)) {
+		if ((*cfdef_it).name.compare(H->active_columnfamily)) {
 			continue;
 		}
 		// If this is the key alias or we are preserving keys
@@ -298,7 +282,6 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 		if (!(H->preserve_values)) {
 			for (std::vector<ColumnDef>::iterator columndef_it = (*cfdef_it).column_metadata.begin(); columndef_it < (*cfdef_it).column_metadata.end(); columndef_it++) {
 				if (!current_column.compare(0, current_column.size(), (*columndef_it).name.c_str(), (*columndef_it).name.size())) {
-
 					stmt->columns[colno].param_type = pdo_cassandra_get_type((*columndef_it).validation_class);
 					found = true;
 				}
@@ -402,7 +385,7 @@ static int pdo_cassandra_stmt_get_column_meta(pdo_stmt_t *stmt, long colno, zval
 	for (std::vector<CfDef>::iterator cfdef_it = H->description.cf_defs.begin(); cfdef_it < H->description.cf_defs.end(); cfdef_it++) {
 		for (std::vector<ColumnDef>::iterator columndef_it = (*cfdef_it).column_metadata.begin(); columndef_it < (*cfdef_it).column_metadata.end(); columndef_it++) {
 			// Only interested in the currently active CF
-			if ((*cfdef_it).name.compare(S->active_columnfamily)) {
+			if ((*cfdef_it).name.compare(H->active_columnfamily)) {
 				continue;
 			}
 			else if (!(*cfdef_it).key_alias.compare(current_column)) {

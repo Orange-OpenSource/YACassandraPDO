@@ -361,12 +361,26 @@ void pdo_cassandra_set_active_keyspace(pdo_cassandra_db_handle *H, const std::st
 	std::string pattern("~USE\\s+[\\']?(\\w+)~ims");
 	std::string match = pdo_cassandra_get_first_sub_pattern(sql, pattern TSRMLS_CC);
 
-	if (match.size () > 0) {
+	if (!match.empty()) {
 		H->active_keyspace = match;
+		H->active_columnfamily.clear();
 		// USE statement invalidates the current cache
 		H->has_description = 0;
 	}
 }
+
+/** {{{ void pdo_cassandra_set_active_columnfamily(pdo_cassandra_db_handle *H, const std::string &query TSRMLS_DC)
+*/
+void pdo_cassandra_set_active_columnfamily(pdo_cassandra_db_handle *H, const std::string &query TSRMLS_DC)
+{
+	std::string pattern("~\\s*SELECT\\s+.+?\\s+FROM\\s+[\\']?(\\w+)~ims");
+	std::string match = pdo_cassandra_get_first_sub_pattern(query, pattern TSRMLS_CC);
+
+	if (!match.empty()) {
+		H->active_columnfamily = match;
+	}
+}
+/* }}} */
 
 /** {{{ static long pdo_cassandra_handle_execute(pdo_dbh_t *dbh, const char *sql, long sql_len TSRMLS_DC)
 */
@@ -389,6 +403,7 @@ static long pdo_cassandra_handle_execute(pdo_dbh_t *dbh, const char *sql, long s
 			return result.num;
 		}
 		pdo_cassandra_set_active_keyspace(H, query TSRMLS_CC);
+		pdo_cassandra_set_active_columnfamily(H, query TSRMLS_CC);
 
 		return 0;
 	} catch (NotFoundException &e) {

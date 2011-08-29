@@ -89,6 +89,7 @@ typedef struct {
 	boost::shared_ptr<CassandraClient> client;
 	pdo_cassandra_einfo einfo;
 	std::string active_keyspace;
+	std::string active_columnfamily;
 	KsDef description;
 	zend_bool has_description;
 	zend_bool preserve_values;
@@ -107,8 +108,6 @@ typedef struct {
 
 	ColumnMap original_column_names;
 	ColumnMap column_name_labels;
-
-	std::string active_columnfamily;
 } pdo_cassandra_stmt;
 /* }}} */
 
@@ -151,6 +150,7 @@ void pdo_cassandra_error_ex(pdo_dbh_t *dbh TSRMLS_DC, pdo_cassandra_error code, 
 #define pdo_cassandra_error_exception(dbh, code, message, ...) pdo_cassandra_error_ex(dbh TSRMLS_CC, code, __FILE__, __LINE__, 1, message, __VA_ARGS__)
 
 void pdo_cassandra_set_active_keyspace(pdo_cassandra_db_handle *H, const std::string &sql TSRMLS_DC);
+void pdo_cassandra_set_active_columnfamily(pdo_cassandra_db_handle *H, const std::string &query TSRMLS_DC);
 std::string pdo_cassandra_get_first_sub_pattern(const std::string &subject, const std::string &pattern TSRMLS_DC);
 
 #endif /* _PHP_PDO_CASSANDRA_PRIVATE_H_ */
