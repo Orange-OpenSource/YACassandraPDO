@@ -146,6 +146,17 @@
     </para>
    </listitem>
   </varlistentry>
+  <varlistentry>
+   <term>
+    <constant>PDO::CASSANDRA_ATTR_PRESERVE_VALUES</constant>
+     (<type>boolean</type>)
+   </term>
+   <listitem>
+    <para>
+     Preserves values as they come from Cassandra
+    </para>
+   </listitem>
+  </varlistentry>
  </variablelist>
 </section>
 

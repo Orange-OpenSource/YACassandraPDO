@@ -121,6 +121,11 @@ Pull requests containing fixes and/or additional tests are highly appreciated.
 		<td>PDO::CASSANDRA_ATTR_THRIFT_DEBUG</td>
 		<td>boolean</td>
 		<td>Converts thrift debug output into PHP warnings</td>
+	</tr>
+	<tr>
+		<td>PDO::CASSANDRA_ATTR_PRESERVE_VALUES</td>
+		<td>boolean</td>
+		<td>Preserves values as they come from Cassandra</td>
 	</tr>			
 </table>
 
@@ -137,4 +142,9 @@ These options can be passed in the fourth argument for PDO constructor
 		<td>PDO::CASSANDRA_ATTR_THRIFT_DEBUG</td>
 		<td>Converts thrift debug output into PHP warnings</td>
 	</tr>
+	<tr>
+		<td>PDO::CASSANDRA_ATTR_PRESERVE_VALUES</td>
+		<td>boolean</td>
+		<td>Preserves values as they come from Cassandra</td>
+	</tr>	
 </table>	    
