@@ -381,6 +381,18 @@ static int pdo_cassandra_stmt_get_column_meta(pdo_stmt_t *stmt, long colno, zval
 		return 0;
 	}
 
+	add_assoc_stringl(return_value,
+	                 "keyspace",
+					 const_cast <char *> (H->active_keyspace.c_str()),
+					 H->active_keyspace.size(),
+					 1);
+
+	add_assoc_stringl(return_value,
+	                 "columnfamily",
+					 const_cast <char *> (H->active_columnfamily.c_str()),
+					 H->active_columnfamily.size(),
+					 1);
+
 	bool found = false;
 	for (std::vector<CfDef>::iterator cfdef_it = H->description.cf_defs.begin(); cfdef_it < H->description.cf_defs.end(); cfdef_it++) {
 		for (std::vector<ColumnDef>::iterator columndef_it = (*cfdef_it).column_metadata.begin(); columndef_it < (*cfdef_it).column_metadata.end(); columndef_it++) {

@@ -58,7 +58,11 @@ pdo_cassandra_done ($db, $keyspace);
 
 echo "OK";
 --EXPECTF--
-array(5) {
+array(7) {
+  ["keyspace"]=>
+  string(8) "phptests"
+  ["columnfamily"]=>
+  string(10) "types_test"
   ["native_type"]=>
   string(9) "key_alias"
   ["name"]=>
@@ -70,7 +74,11 @@ array(5) {
   ["pdo_type"]=>
   int(2)
 }
-array(10) {
+array(12) {
+  ["keyspace"]=>
+  string(8) "phptests"
+  ["columnfamily"]=>
+  string(10) "types_test"
   ["native_type"]=>
   string(41) "org.apache.cassandra.db.marshal.BytesType"
   ["comparator"]=>
@@ -92,7 +100,11 @@ array(10) {
   ["pdo_type"]=>
   int(2)
 }
-array(10) {
+array(12) {
+  ["keyspace"]=>
+  string(8) "phptests"
+  ["columnfamily"]=>
+  string(10) "types_test"
   ["native_type"]=>
   string(41) "org.apache.cassandra.db.marshal.AsciiType"
   ["comparator"]=>
@@ -114,7 +126,11 @@ array(10) {
   ["pdo_type"]=>
   int(2)
 }
-array(10) {
+array(12) {
+  ["keyspace"]=>
+  string(8) "phptests"
+  ["columnfamily"]=>
+  string(10) "types_test"
   ["native_type"]=>
   string(40) "org.apache.cassandra.db.marshal.UTF8Type"
   ["comparator"]=>
@@ -136,7 +152,11 @@ array(10) {
   ["pdo_type"]=>
   int(2)
 }
-array(10) {
+array(12) {
+  ["keyspace"]=>
+  string(8) "phptests"
+  ["columnfamily"]=>
+  string(10) "types_test"
   ["native_type"]=>
   string(40) "org.apache.cassandra.db.marshal.UTF8Type"
   ["comparator"]=>
@@ -158,7 +178,11 @@ array(10) {
   ["pdo_type"]=>
   int(2)
 }
-array(10) {
+array(12) {
+  ["keyspace"]=>
+  string(8) "phptests"
+  ["columnfamily"]=>
+  string(10) "types_test"
   ["native_type"]=>
   string(40) "org.apache.cassandra.db.marshal.UUIDType"
   ["comparator"]=>
@@ -180,7 +204,11 @@ array(10) {
   ["pdo_type"]=>
   int(2)
 }
-array(10) {
+array(12) {
+  ["keyspace"]=>
+  string(8) "phptests"
+  ["columnfamily"]=>
+  string(10) "types_test"
   ["native_type"]=>
   string(43) "org.apache.cassandra.db.marshal.IntegerType"
   ["comparator"]=>
@@ -202,7 +230,11 @@ array(10) {
   ["pdo_type"]=>
   int(1)
 }
-array(10) {
+array(12) {
+  ["keyspace"]=>
+  string(8) "phptests"
+  ["columnfamily"]=>
+  string(10) "types_test"
   ["native_type"]=>
   string(40) "org.apache.cassandra.db.marshal.LongType"
   ["comparator"]=>
@@ -224,7 +256,11 @@ array(10) {
   ["pdo_type"]=>
   int(1)
 }
-array(10) {
+array(12) {
+  ["keyspace"]=>
+  string(8) "phptests"
+  ["columnfamily"]=>
+  string(10) "types_test"
   ["native_type"]=>
   string(40) "org.apache.cassandra.db.marshal.LongType"
   ["comparator"]=>
