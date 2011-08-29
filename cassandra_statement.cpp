@@ -257,7 +257,7 @@ static long pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &b
 	MAKE_STD_ZVAL(retval);
 	_php_math_basetozval(buf, 16, retval);
 
-	long value = LONG_MIN;
+	long value = LONG_MAX;
 	if (Z_TYPE_P(retval) == IS_LONG) {
 		value = Z_LVAL_P(retval);
 	} else {
