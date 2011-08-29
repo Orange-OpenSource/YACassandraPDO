@@ -77,6 +77,10 @@ static void pdo_cassandra_set_cqlstate(pdo_error_type buffer, pdo_cassandra_erro
 			strlcpy(buffer, "08006", sizeof(pdo_error_type));
 		break;
 
+		case PDO_CASSANDRA_INTEGER_CONVERSION_ERROR:
+			strlcpy(buffer, "22003", sizeof(pdo_error_type));
+		break;
+
 		default:
 			strlcpy(buffer, "HY000", sizeof(pdo_error_type));
 		break;

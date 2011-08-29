@@ -37,5 +37,6 @@ pdo_cassandra_done ($db, $keyspace);
 
 echo "OK";
 --EXPECT--
+CQLSTATE[22003] [10] The value is too large for integer datatype
 50000000000000000000000
 OK

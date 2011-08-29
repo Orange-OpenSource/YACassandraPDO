@@ -145,7 +145,8 @@ enum pdo_cassandra_error {
 	PDO_CASSANDRA_AUTHORIZATION_ERROR,
 	PDO_CASSANDRA_SCHEMA_DISAGREEMENT,
 	PDO_CASSANDRA_TRANSPORT_ERROR,
-	PDO_CASSANDRA_INVALID_CONNECTION_STRING
+	PDO_CASSANDRA_INVALID_CONNECTION_STRING,
+	PDO_CASSANDRA_INTEGER_CONVERSION_ERROR
 };
 
 void pdo_cassandra_error_ex(pdo_dbh_t *dbh TSRMLS_DC, pdo_cassandra_error code, const char *file, int line, zend_bool force_exception, const char *message, ...);

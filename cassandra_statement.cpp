@@ -228,45 +228,23 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
 }
 /* }}} */
 
-/* {{{ php_bin2hex
- */
-static std::string pdo_cassandra_bin2hex(const unsigned char *binary, const size_t len)
-{
-	static const char hexconvtab[] = "0123456789abcdef";
-	std::string result;
-
-	for (size_t i = 0; i < len; i++) {
-		result.append(&(hexconvtab[binary[i] >> 4]), 1);
-		result.append(&(hexconvtab[binary[i] & 15]), 1);
-	}
-	return result;
-}
-
 /** {{{ static long pdo_cassandra_marshal_numeric(const std::string &binary)
 */
 static long pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &binary) 
 {
-	const unsigned char *bytes = reinterpret_cast <const unsigned char *>(binary.c_str());
-	std::string hex = pdo_cassandra_bin2hex(bytes, binary.size());
-
-	zval *buf;
-	MAKE_STD_ZVAL(buf);
-	ZVAL_STRINGL(buf, const_cast<char*>(hex.c_str()), hex.size(), 1);
-
-	zval *retval;
-	MAKE_STD_ZVAL(retval);
-	_php_math_basetozval(buf, 16, retval);
-
-	long value = LONG_MAX;
-	if (Z_TYPE_P(retval) == IS_LONG) {
-		value = Z_LVAL_P(retval);
-	} else {
-		pdo_cassandra_error(stmt->dbh, PDO_CASSANDRA_GENERAL_ERROR, "The value is too large for integer datatype", "");
+	if (sizeof(long) < binary.size()) {
+		pdo_cassandra_error(stmt->dbh, PDO_CASSANDRA_INTEGER_CONVERSION_ERROR, "The value is too large for integer datatype", "");
+		return LONG_MAX;
 	}
-	zval_ptr_dtor(&buf);
-	zval_ptr_dtor(&retval);
-	return value;
 
+	const unsigned char *bytes = reinterpret_cast <const unsigned char *>(binary.c_str());
+
+	long val = 0;
+	size_t siz = binary.size ();
+	for (size_t i = 0; i < siz; i++)
+		val = val << 8 | bytes[i];
+
+	return val;
 }
 /* }}} */
 
