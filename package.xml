@@ -72,6 +72,8 @@
    <file name="tests/020-types.phpt" role="doc" />
    <file name="tests/021-comparators.phpt" role="doc" />
    <file name="tests/022-counters.phpt" role="doc" />
+   <file name="tests/023-preserve.phpt" role="doc" />
+   <file name="tests/024-multiplekeyspaces.phpt" role="doc" />
    <file name="tests/config.inc-dist" role="doc" />
    <file name="tests/skipif.inc" role="doc" />
   </dir>
