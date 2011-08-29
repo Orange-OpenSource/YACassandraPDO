@@ -22,12 +22,14 @@ $db->exec ("CREATE TABLE my_cf (my_key text PRIMARY KEY)");
 $db->exec ("UPDATE my_cf SET hello = 'world', test = 'column' WHERE my_key = 'aa'");
 
 $db->exec ("USE {$keyspace}_int");
-$results = $db->query ("SELECT * FROM my_cf WHERE my_key = 'aa'");
-var_dump ($results->fetchAll(PDO::FETCH_ASSOC));
+$results1 = $db->query ("SELECT * FROM my_cf WHERE my_key = 'aa'");
+$stmt = $db->prepare ("SELECT * FROM my_cf WHERE my_key = 'aa'");
 
 $db->exec ("USE {$keyspace}_text");
-$results = $db->query ("SELECT * FROM my_cf WHERE my_key = 'aa'");
-var_dump ($results->fetchAll(PDO::FETCH_ASSOC));
+$results2 = $db->query ("SELECT * FROM my_cf WHERE my_key = 'aa'");
+
+var_dump ($results1->fetchAll(PDO::FETCH_ASSOC));
+var_dump ($results2->fetchAll(PDO::FETCH_ASSOC));
 
 $db->exec ("DROP KEYSPACE {$keyspace}_int");
 $db->exec ("DROP KEYSPACE {$keyspace}_text");
