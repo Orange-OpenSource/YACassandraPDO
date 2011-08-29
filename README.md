@@ -68,6 +68,12 @@ Transactions are not supported and calling PDO::beginTransaction will result in 
 
 Pull requests containing fixes and/or additional tests are highly appreciated.
 
+# Handling large integers
+
+This driver will try to convert integers to PHP data types unless PDO_CASSANDRA_ATTR_PRESERVE_VALUES 
+is used. If an overflow would happen, PHP_INT_MAX is returned and an error is raised. 
+Note that by default PDO will silently ignore the error, unless error mode is set to exceptions.
+
 
 # Driver specific attributes for PDO::setAttribute
 
