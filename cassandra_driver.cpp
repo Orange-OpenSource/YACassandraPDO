@@ -320,6 +320,8 @@ static int pdo_cassandra_handle_prepare(pdo_dbh_t *dbh, const char *sql, long sq
 }
 /* }}} */
 
+/** {{{ std::string pdo_cassandra_get_first_sub_pattern(const std::string &subject, const std::string &pattern TSRMLS_DC)
+*/
 std::string pdo_cassandra_get_first_sub_pattern(const std::string &subject, const std::string &pattern TSRMLS_DC)
 {
 	std::string ret;
@@ -355,7 +357,10 @@ std::string pdo_cassandra_get_first_sub_pattern(const std::string &subject, cons
 	zval_ptr_dtor(&sub_patterns);
 	return ret;
 }
+/* }}} */
 
+/** {{{ void pdo_cassandra_set_active_keyspace(pdo_cassandra_db_handle *H, const std::string &sql TSRMLS_DC)
+*/
 void pdo_cassandra_set_active_keyspace(pdo_cassandra_db_handle *H, const std::string &sql TSRMLS_DC)
 {
 	std::string pattern("~USE\\s+[\\']?(\\w+)~ims");
@@ -368,6 +373,7 @@ void pdo_cassandra_set_active_keyspace(pdo_cassandra_db_handle *H, const std::st
 		H->has_description = 0;
 	}
 }
+/* }}} */
 
 /** {{{ void pdo_cassandra_set_active_columnfamily(pdo_cassandra_db_handle *H, const std::string &query TSRMLS_DC)
 */
