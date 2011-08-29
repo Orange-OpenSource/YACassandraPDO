@@ -36,6 +36,7 @@ extern "C" {
 #include "ext/standard/url.h"
 #include "ext/standard/php_string.h"
 #include "ext/pcre/php_pcre.h"
+#include "ext/standard/php_math.h"
 }
 
 #define HAVE_ZLIB_CP HAVE_ZLIB
