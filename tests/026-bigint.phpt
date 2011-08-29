@@ -22,21 +22,18 @@ $stmt = $db->query ("SELECT testval FROM verylargeint_test WHERE my_key = 'aa'")
 $row = $stmt->fetch (PDO::FETCH_ASSOC);
 
 if ($row ['testval'] == (PHP_INT_MAX * -1) -1) {
-	echo "the value matches INT_MIN" . PHP_EOL;
+	$db->setAttribute(PDO::CASSANDRA_ATTR_PRESERVE_VALUES, true);
+
+	$stmt = $db->query ("SELECT testval FROM verylargeint_test WHERE my_key = 'aa'");
+	$row = $stmt->fetch (PDO::FETCH_ASSOC);
+
+	$g = gmp_init(bin2hex($row['testval']), 16);
+	echo gmp_strval ($g) . PHP_EOL;
 }
-
-$db->setAttribute(PDO::CASSANDRA_ATTR_PRESERVE_VALUES, true);
-
-$stmt = $db->query ("SELECT testval FROM verylargeint_test WHERE my_key = 'aa'");
-$row = $stmt->fetch (PDO::FETCH_ASSOC);
-
-$g = gmp_init(bin2hex($row['testval']), 16);
-echo gmp_strval ($g) . PHP_EOL;
 
 pdo_cassandra_done ($db, $keyspace);
 
 echo "OK";
 --EXPECT--
-the value matches INT_MIN
 1002003004005006007008009001000
 OK
