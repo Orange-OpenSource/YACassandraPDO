@@ -93,7 +93,6 @@ static int pdo_cassandra_stmt_execute(pdo_stmt_t *stmt TSRMLS_DC)
 		if (!H->transport->isOpen()) {
 			H->transport->open();
 		}
-
 		std::string query(stmt->active_query_string);
 
 		S->result.reset(new CqlResult);
@@ -131,12 +130,45 @@ static int pdo_cassandra_stmt_execute(pdo_stmt_t *stmt TSRMLS_DC)
 }
 /* }}} */
 
+static zend_bool pdo_cassandra_add_column(pdo_stmt_t *stmt, const std::string &name, int order)
+{
+	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
+	pdo_cassandra_db_handle *H = static_cast <pdo_cassandra_db_handle *>(S->H);
+
+	try {
+		S->original_column_names.left.at(name);
+		return 0;
+	} catch (std::out_of_range &ex) {
+		S->original_column_names.insert(ColumnMap::value_type(name, order));
+
+		// Marshal the data according to comparator
+		for (std::vector<CfDef>::iterator cfdef_it = H->description.cf_defs.begin(); cfdef_it < H->description.cf_defs.end(); cfdef_it++) {
+
+			// Only interested in the currently active CF
+			if ((*cfdef_it).name.compare(H->active_columnfamily) || !name.compare((*cfdef_it).key_alias)) {
+				continue;
+			}
+			pdo_param_type name_type = pdo_cassandra_get_type((*cfdef_it).comparator_type);
+
+			if (name_type == PDO_PARAM_INT && name.size() <= 8) {
+				char label[96];
+				size_t len;
+				long namel = (long) pdo_cassandra_marshal_numeric(stmt, name);
+				len = snprintf(label, 96, "%ld", namel);
+				S->column_name_labels.insert(ColumnMap::value_type(std::string(label, len), order));
+				break;
+			}
+		}
+		return 1;
+	}
+}
+
 /** {{{ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation ori, long offset TSRMLS_DC)
 */
 static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation ori, long offset TSRMLS_DC)
 {
 	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
-	pdo_cassandra_db_handle *H = static_cast <pdo_cassandra_db_handle *>(S->H);
+	int order = 0;
 
 	if (!stmt->executed || !S->result.get()->rows.size()) {
 		return 0;
@@ -148,46 +180,34 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 
 		// Set column names and labels if we don't have them already
 		if (!S->original_column_names.size()) {
-			int order = 0;
 
 			if (!pdo_cassandra_describe_keyspace(stmt TSRMLS_CC)) {
 				return 0;
 			}
 
-			// Get unique column names
-			for (std::vector<CqlRow>::iterator it = S->result.get()->rows.begin(); it < S->result.get()->rows.end(); it++) {
-				for (std::vector<Column>::iterator col_it = (*it).columns.begin(); col_it < (*it).columns.end(); col_it++) {
-					try {
-						S->original_column_names.left.at((*col_it).name);
-					} catch (std::out_of_range &ex) {
-						S->original_column_names.insert(ColumnMap::value_type((*col_it).name, order));
-
-						// Marshal the data according to comparator
-						for (std::vector<CfDef>::iterator cfdef_it = H->description.cf_defs.begin(); cfdef_it < H->description.cf_defs.end(); cfdef_it++) {
-
-							// Only interested in the currently active CF
-							if ((*cfdef_it).name.compare(H->active_columnfamily) || !(*col_it).name.compare((*cfdef_it).key_alias)) {
-								continue;
-							}
-							pdo_param_type name_type = pdo_cassandra_get_type((*cfdef_it).comparator_type);
-
-							if (name_type == PDO_PARAM_INT && (*col_it).name.size() <= 8) {
-								char label[96];
-								size_t len;
-								long name = (long) pdo_cassandra_marshal_numeric(stmt, (*col_it).name);
-								len = snprintf(label, 96, "%ld", name);
-								S->column_name_labels.insert(ColumnMap::value_type(std::string(label, len), order));
-								break;
-							}
+			if (S->rowset_iterator) {
+				for (std::vector<Column>::iterator col_it = (*S->it).columns.begin(); col_it < (*S->it).columns.end(); col_it++) {
+					if (pdo_cassandra_add_column(stmt, (*col_it).name, order)) {
+						order++;
+					}
+				}
+			} else {
+				// Get unique column names
+				for (std::vector<CqlRow>::iterator it = S->result.get()->rows.begin(); it < S->result.get()->rows.end(); it++) {
+					for (std::vector<Column>::iterator col_it = (*it).columns.begin(); col_it < (*it).columns.end(); col_it++) {
+						if (pdo_cassandra_add_column(stmt, (*col_it).name, order)) {
+							order++;
 						}
-						++order;
 					}
 				}
 			}
+			stmt->column_count = order;
 		}
 		stmt->column_count = S->original_column_names.size();
 	} else {
-		S->it++;
+		if (!S->rowset_iterator) {
+			S->it++;
+		}
 	}
 
 	if (S->it == S->result.get()->rows.end()) {
@@ -480,6 +500,54 @@ static int pdo_cassandra_stmt_dtor(pdo_stmt_t *stmt TSRMLS_DC)
 }
 /* }}} */
 
+int pdo_cassandra_stmt_next_rowset(pdo_stmt_t *stmt TSRMLS_DC)
+{
+	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
+	S->it++;
+
+	S->original_column_names.clear();
+	S->column_name_labels.clear();
+
+	if (S->it == S->result.get()->rows.end()) {
+		S->has_iterator = 0;
+		return 0;
+	}
+
+	int order = 0;
+	for (std::vector<Column>::iterator col_it = (*S->it).columns.begin(); col_it < (*S->it).columns.end(); col_it++) {
+		if (pdo_cassandra_add_column(stmt, (*col_it).name, order)) {
+			order++;
+		}
+	}
+	stmt->column_count = order;
+	return 1;
+}
+
+static int pdo_cassandra_stmt_set_attr(pdo_stmt_t *stmt, long attr, zval *val TSRMLS_DC)
+{
+	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
+	pdo_cassandra_constant attribute = static_cast <pdo_cassandra_constant>(attr);
+
+
+	if (attribute == PDO_CASSANDRA_ATTR_ROWSET_ITERATOR) {
+		convert_to_boolean(val);
+		S->rowset_iterator = Z_BVAL_P(val);
+		return 1;
+	}
+	return 0;
+}
+
+static int pdo_cassandra_stmt_get_attr(pdo_stmt_t *stmt, long attr, zval *val TSRMLS_DC)
+{
+	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
+	pdo_cassandra_constant attribute = static_cast <pdo_cassandra_constant>(attr);
+
+	if (attribute == PDO_CASSANDRA_ATTR_ROWSET_ITERATOR) {
+		ZVAL_BOOL(val, S->rowset_iterator);
+		return 1;
+	}
+	return 0;
+}
 
 struct pdo_stmt_methods cassandra_stmt_methods = {
 	pdo_cassandra_stmt_dtor,
@@ -488,10 +556,10 @@ struct pdo_stmt_methods cassandra_stmt_methods = {
 	pdo_cassandra_stmt_describe,
 	pdo_cassandra_stmt_get_column,
 	NULL, /* param_hook */
-	NULL, /* set_attr */
-	NULL, /* get_attr */
+	pdo_cassandra_stmt_set_attr, /* set_attr */
+	pdo_cassandra_stmt_get_attr, /* get_attr */
 	pdo_cassandra_stmt_get_column_meta,
-	NULL, /* next_rowset */
+	pdo_cassandra_stmt_next_rowset,
 	pdo_cassandra_stmt_cursor_close
 };
 

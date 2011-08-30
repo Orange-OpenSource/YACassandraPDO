@@ -1,3 +1,11 @@
+0.1.4
+- Updated handling for arbitrary size integers that overflow platform long.
+  Integer overflow now causes error 22003
+- Fixed thread-safe build
+- Added new option PDO::CASSANDRA_ATTR_PRESERVE_VALUES
+- Fixed error in handling sparse columns when statement is executed 
+  multiple times
+
 0.1.3 
 - Sparse columns are now handled as an union
 - Added support for counters 

@@ -13,8 +13,8 @@
  <date>2011-08-28</date>
  <time>12:00:00</time>
  <version>
-  <release>0.1.3</release>
-  <api>0.1.3</api>
+  <release>0.1.4</release>
+  <api>0.1.4</api>
  </version>
  <stability>
   <release>beta</release>
@@ -22,11 +22,12 @@
  </stability>
  <license>PHP License</license>
  <notes>
-- Sparse columns are now handled as an union
-- Added support for counters 
-- Added more tests and included tests in package.xml
-- Added option to preserve original column values
-- Added the original column key to metadata
+- Updated handling for arbitrary size integers that overflow platform long.
+  Integer overflow now causes error 22003
+- Fixed thread-safe build
+- Added new option PDO::CASSANDRA_ATTR_PRESERVE_VALUES
+- Fixed error in handling sparse columns when statement is executed 
+  multiple times
  </notes>
  <contents>
   <dir name="/">
@@ -74,6 +75,8 @@
    <file name="tests/022-counters.phpt" role="doc" />
    <file name="tests/023-preserve.phpt" role="doc" />
    <file name="tests/024-multiplekeyspaces.phpt" role="doc" />
+   <file name="tests/025-activecolumnfamily.phpt" role="doc" />
+   <file name="tests/026-bigint.phpt" role="doc" />
    <file name="tests/config.inc-dist" role="doc" />
    <file name="tests/skipif.inc" role="doc" />
   </dir>
