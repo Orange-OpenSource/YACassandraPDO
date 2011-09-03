@@ -503,6 +503,12 @@ static int pdo_cassandra_stmt_dtor(pdo_stmt_t *stmt TSRMLS_DC)
 int pdo_cassandra_stmt_next_rowset(pdo_stmt_t *stmt TSRMLS_DC)
 {
 	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
+
+	if (!S->rowset_iterator) {
+		pdo_cassandra_error_exception(stmt->dbh, PDO_CASSANDRA_GENERAL_ERROR, "PDO::nextRowset can only be used with rowset iterator", "");
+		return 0;
+	}
+
 	S->it++;
 
 	S->original_column_names.clear();
