@@ -26,6 +26,13 @@ do {
 	var_dump ($row);
 } while ($stmt->nextRowSet ());
 
+try {
+	$stmt = $db->prepare ("SELECT * FROM extended_users");
+	$stmt->execute ();
+	$stmt->setAttribute(PDO::CASSANDRA_ATTR_ROWSET_ITERATOR, true);
+} catch (PDOException $e) {
+	echo $e->getMessage () . PHP_EOL;
+}
 pdo_cassandra_done ($db, $keyspace);
 
 echo "OK";
@@ -54,4 +61,5 @@ array(3) {
   ["thirdcolumn"]=>
   string(8) "metadata"
 }
+CQLSTATE[HY000] [0] Rowset attribute must be set before executing the statement
 OK
