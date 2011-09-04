@@ -539,7 +539,7 @@ static int pdo_cassandra_stmt_set_attr(pdo_stmt_t *stmt, long attr, zval *val TS
 		convert_to_boolean(val);
 
 		if (Z_BVAL_P(val) && stmt->executed) {
-			pdo_cassandra_error_exception(stmt->dbh, PDO_CASSANDRA_GENERAL_ERROR, "Rowset attribute must be set before executing the statement", "");
+			pdo_cassandra_error_exception(stmt->dbh, PDO_CASSANDRA_GENERAL_ERROR, "Rowset iterator attribute must be set before executing the statement", "");
 			return 0;
 		}
 
