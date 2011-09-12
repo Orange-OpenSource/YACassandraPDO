@@ -14,7 +14,8 @@ pdo_cassandra_init ($db, $keyspace);
 echo "-- SILENT -- " . PHP_EOL;
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
 $db->exec ("CREATE KEYSPACE $keyspace with strategy_class = 'SimpleStrategy' and strategy_options:replication_factor=1;");
-var_dump ($db->errorInfo ());
+$einfo = $db->errorInfo ();
+echo $einfo [0] . " " . $einfo [1] . PHP_EOL;
 echo "-- SILENT -- " . PHP_EOL;
 
 echo "-- WARNING -- " . PHP_EOL;
@@ -38,20 +39,13 @@ echo "OK";
 ?>
 --EXPECTF--
 -- SILENT -- 
-array(3) {
-  [0]=>
-  string(5) "HY000"
-  [1]=>
-  int(2)
-  [2]=>
-  string(24) "Keyspace already exists."
-}
+HY000 2
 -- SILENT -- 
 -- WARNING -- 
 
-Warning: PDO::exec(): CQLSTATE[HY000] [2] Keyspace already exists. in %s on line %d
+Warning: PDO::exec(): CQLSTATE[HY000] [2] %r.*%r
 -- WARNING -- 
 -- EXCEPTION -- 
-CQLSTATE[HY000] [2] Keyspace already exists.
+CQLSTATE[HY000] [2] %r.*%r
 -- EXCEPTION -- 
 OK

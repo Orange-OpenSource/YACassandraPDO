@@ -16,7 +16,7 @@ try {
 
 $db->exec ("CREATE KEYSPACE {$keyspace} with strategy_class = 'SimpleStrategy' and strategy_options:replication_factor=1;");
 $db->exec ("USE {$keyspace}");
-$db->exec ("CREATE COLUMNFAMILY int_test (my_key text PRIMARY KEY, my_int int)");
+$db->exec ("CREATE COLUMNFAMILY int_test (my_key text PRIMARY KEY, my_int bigint)");
 
 $stmt = $db->prepare ("UPDATE int_test SET my_int = :test WHERE my_key = :key");
 $stmt->bindValue (':test', 12345, PDO::PARAM_INT);

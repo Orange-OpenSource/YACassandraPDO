@@ -55,9 +55,9 @@ array(1) {
     ["my_key"]=>
     string(2) "aa"
     [10]=>
-    string(8) "%s"
+    string(4) "%s"
     [20]=>
-    string(8) "%s"
+    string(4) "%s"
   }
 }
 OK

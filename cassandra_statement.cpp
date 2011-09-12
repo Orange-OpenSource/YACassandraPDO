@@ -141,23 +141,19 @@ static zend_bool pdo_cassandra_add_column(pdo_stmt_t *stmt, const std::string &n
 	} catch (std::out_of_range &ex) {
 		S->original_column_names.insert(ColumnMap::value_type(name, order));
 
-		// Marshal the data according to comparator
-		for (std::vector<CfDef>::iterator cfdef_it = H->description.cf_defs.begin(); cfdef_it < H->description.cf_defs.end(); cfdef_it++) {
+        pdo_param_type name_type;
+		if (S->result.get ()->schema.name_types[name].size () == 0) {
+            name_type = pdo_cassandra_get_type(S->result.get ()->schema.default_name_type);
+		} else {
+		    name_type = pdo_cassandra_get_type(S->result.get ()->schema.name_types [name]);
+		}
 
-			// Only interested in the currently active CF
-			if ((*cfdef_it).name.compare(H->active_columnfamily) || !name.compare((*cfdef_it).key_alias)) {
-				continue;
-			}
-			pdo_param_type name_type = pdo_cassandra_get_type((*cfdef_it).comparator_type);
-
-			if (name_type == PDO_PARAM_INT && name.size() <= 8) {
-				char label[96];
-				size_t len;
-				long namel = (long) pdo_cassandra_marshal_numeric(stmt, name);
-				len = snprintf(label, 96, "%ld", namel);
-				S->column_name_labels.insert(ColumnMap::value_type(std::string(label, len), order));
-				break;
-			}
+		if (name_type == PDO_PARAM_INT && name.size() <= 8) {
+			char label[96];
+			size_t len;
+			long namel = (long) pdo_cassandra_marshal_numeric(stmt, name);
+			len = snprintf(label, 96, "%ld", namel);
+			S->column_name_labels.insert(ColumnMap::value_type(std::string(label, len), order));
 		}
 		return 1;
 	}
@@ -180,10 +176,6 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 
 		// Set column names and labels if we don't have them already
 		if (!S->original_column_names.size()) {
-
-			if (!pdo_cassandra_describe_keyspace(stmt TSRMLS_CC)) {
-				return 0;
-			}
 
 			if (S->rowset_iterator) {
 				for (std::vector<Column>::iterator col_it = (*S->it).columns.begin(); col_it < (*S->it).columns.end(); col_it++) {
@@ -224,27 +216,20 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 */
 static pdo_param_type pdo_cassandra_get_type(const std::string &type)
 {
-	if (!type.compare("org.apache.cassandra.db.marshal.BytesType")) {
-		return PDO_PARAM_STR;
-	} else if (!type.compare("org.apache.cassandra.db.marshal.AsciiType")) {
-		return PDO_PARAM_STR;
-	} else if (!type.compare("org.apache.cassandra.db.marshal.UTF8Type")) {
-		return PDO_PARAM_STR;
-	} else if (!type.compare("org.apache.cassandra.db.marshal.IntegerType")) {
-		return PDO_PARAM_INT;
-	} else if (!type.compare("org.apache.cassandra.db.marshal.LongType")) {
-		return PDO_PARAM_INT;
-	} else if (!type.compare("org.apache.cassandra.db.marshal.UUIDType")) {
-		return PDO_PARAM_STR;
-	} else if (!type.compare("org.apache.cassandra.db.marshal.LexicalType")) {
-		return PDO_PARAM_STR;
-	} else if (!type.compare("org.apache.cassandra.db.marshal.TimeUUIDType")) {
-		return PDO_PARAM_STR;
-	} else if (!type.compare("org.apache.cassandra.db.marshal.CounterColumnType")) {
-		return PDO_PARAM_INT;
-	} else {
-		return PDO_PARAM_STR;
-	}
+    std::string real_type;
+
+    if (type.find("org.apache.cassandra.db.marshal.") != std::string::npos) {
+        real_type = type.substr(::strlen("org.apache.cassandra.db.marshal."));
+    } else {
+        real_type = type;
+    }
+    if (!real_type.compare("IntegerType") ||
+        !real_type.compare("Int32Type") ||
+        !real_type.compare("LongType") ||
+        !real_type.compare("CounterColumnType")) {
+        return PDO_PARAM_INT;
+    }
+    return PDO_PARAM_STR;
 }
 /* }}} */
 
@@ -282,54 +267,30 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 		return 0;
 	}
 
-	if (!pdo_cassandra_describe_keyspace(stmt TSRMLS_CC)) {
-		return 0;
-	}
-
-	for (std::vector<CfDef>::iterator cfdef_it = H->description.cf_defs.begin(); cfdef_it < H->description.cf_defs.end(); cfdef_it++) {
-		bool found = false;
-		stmt->columns[colno].param_type = (H->preserve_values) ? PDO_PARAM_STR : pdo_cassandra_get_type((*cfdef_it).default_validation_class);
-
-		// Only interested in the currently active CF
-		if ((*cfdef_it).name.compare(H->active_columnfamily)) {
-			continue;
-		}
-		// If this is the key alias or we are preserving keys
-		else if (!current_column.compare((*cfdef_it).key_alias)) {
-			stmt->columns[colno].name       = estrndup(current_column.c_str(), current_column.size());
-			stmt->columns[colno].namelen    = current_column.size();
-			stmt->columns[colno].precision  = 0;
-			stmt->columns[colno].maxlen     = -1;
-			stmt->columns[colno].param_type = PDO_PARAM_STR;
-			return 1;
-		}
-
-		if (!(H->preserve_values)) {
-			for (std::vector<ColumnDef>::iterator columndef_it = (*cfdef_it).column_metadata.begin(); columndef_it < (*cfdef_it).column_metadata.end(); columndef_it++) {
-				if (!current_column.compare(0, current_column.size(), (*columndef_it).name.c_str(), (*columndef_it).name.size())) {
-					stmt->columns[colno].param_type = pdo_cassandra_get_type((*columndef_it).validation_class);
-					found = true;
-				}
-			}
-		}
-		if (found) {
-			break;
-		}
-	}
-
 	try {
-		std::string column_label(S->column_name_labels.right.at(colno));
-		stmt->columns[colno].name      = estrndup(const_cast <char *> (column_label.c_str()), column_label.size());
-		stmt->columns[colno].namelen   = column_label.size();
-		stmt->columns[colno].precision = 0;
-		stmt->columns[colno].maxlen    = -1;
-		return 1;
-	} catch (std::out_of_range &ex) {
-		stmt->columns[colno].name      = estrndup(const_cast <char *> (current_column.c_str()), current_column.size());
-		stmt->columns[colno].namelen   = current_column.size();
-		stmt->columns[colno].precision = 0;
-		stmt->columns[colno].maxlen    = -1;
+	    std::string column_label = S->column_name_labels.right.at(colno);
+
+	    stmt->columns[colno].name    = estrndup(column_label.c_str(), column_label.size());
+    	stmt->columns[colno].namelen = column_label.size();
+
+	} catch (std::exception &e) {
+        stmt->columns[colno].name    = estrndup(current_column.c_str(), current_column.size());
+    	stmt->columns[colno].namelen = current_column.size();
 	}
+
+    if (H->preserve_values) {
+        stmt->columns[colno].param_type = PDO_PARAM_STR;
+    } else {
+    	// Do we have schema?
+        if (S->result.get ()->schema.value_types [current_column].size() == 0) {
+            stmt->columns[colno].param_type = pdo_cassandra_get_type(S->result.get ()->schema.default_value_type);
+        } else {
+            stmt->columns[colno].param_type = pdo_cassandra_get_type(S->result.get ()->schema.value_types [current_column]);
+        }
+    }
+
+	stmt->columns[colno].precision  = 0;
+	stmt->columns[colno].maxlen     = -1;
 	return 1;
 }
 /* }}} */
@@ -421,6 +382,7 @@ static int pdo_cassandra_stmt_get_column_meta(pdo_stmt_t *stmt, long colno, zval
 	bool found = false;
 	for (std::vector<CfDef>::iterator cfdef_it = H->description.cf_defs.begin(); cfdef_it < H->description.cf_defs.end(); cfdef_it++) {
 		for (std::vector<ColumnDef>::iterator columndef_it = (*cfdef_it).column_metadata.begin(); columndef_it < (*cfdef_it).column_metadata.end(); columndef_it++) {
+
 			// Only interested in the currently active CF
 			if ((*cfdef_it).name.compare(H->active_columnfamily)) {
 				continue;

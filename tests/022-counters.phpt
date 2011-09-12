@@ -24,6 +24,8 @@ $db->query("UPDATE test_counter SET count_me = count_me + 2 WHERE my_key = 'coun
 $stmt = $db->query ("SELECT * FROM test_counter");
 var_dump ($stmt->fetchAll (PDO::FETCH_ASSOC));
 
+$db->query ("DROP TABLE test_counter");
+
 pdo_cassandra_done ($db, $keyspace);
 
 echo "OK";

@@ -46,7 +46,7 @@ namespace rb CassandraThrift
 #           for every edit that doesn't result in a change to major/minor.
 #
 # See the Semantic Versioning Specification (SemVer) http://semver.org.
-const string VERSION = "19.10.0"
+const string VERSION = "19.14.0"
 
 
 #
@@ -357,6 +357,7 @@ struct AuthenticationRequest {
 
 enum IndexType {
     KEYS,
+    CUSTOM
 }
 
 /* describes a column in a column family. */
@@ -364,7 +365,8 @@ struct ColumnDef {
     1: required binary name,
     2: required string validation_class,
     3: optional IndexType index_type,
-    4: optional string index_name
+    4: optional string index_name,
+    5: optional map<string,string> index_options
 }
 
 
@@ -387,14 +389,15 @@ struct CfDef {
     18: optional i32 max_compaction_threshold,
     19: optional i32 row_cache_save_period_in_seconds,
     20: optional i32 key_cache_save_period_in_seconds,
-    21: optional i32 memtable_flush_after_mins,
-    22: optional i32 memtable_throughput_in_mb,
-    23: optional double memtable_operations_in_millions,
     24: optional bool replicate_on_write,
     25: optional double merge_shards_chance,
     26: optional string key_validation_class,
     27: optional string row_cache_provider="org.apache.cassandra.cache.ConcurrentLinkedHashCacheProvider",
     28: optional binary key_alias,
+    29: optional string compaction_strategy,
+    30: optional map<string,string> compaction_strategy_options,
+    31: optional i32 row_cache_keys_to_save,
+    32: optional map<string,string> compression_options,
 }
 
 /* describes a keyspace. */
@@ -428,10 +431,18 @@ struct CqlRow {
     2: required list<Column> columns
 }
 
+struct CqlMetadata {
+    1: required map<binary,string> name_types,
+    2: required map<binary,string> value_types,
+    3: required string default_name_type,
+    4: required string default_value_type
+}
+
 struct CqlResult {
     1: required CqlResultType type,
     2: optional list<CqlRow> rows,
-    3: optional i32 num
+    3: optional i32 num,
+    4: optional CqlMetadata schema
 }
 
 service Cassandra {

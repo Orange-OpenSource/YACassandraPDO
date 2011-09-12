@@ -61,5 +61,5 @@ array(3) {
   ["thirdcolumn"]=>
   string(8) "metadata"
 }
-CQLSTATE[HY000] [0] Rowset attribute must be set before executing the statement
+CQLSTATE[HY000] [0] Rowset iterator attribute must be set before executing the statement
 OK

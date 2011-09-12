@@ -8,12 +8,19 @@ require_once(dirname(__FILE__) . '/config.inc');
 
 $db = new PDO($dsn);
 
+pdo_cassandra_init($db);
+
+try {
+	$db->exec ("DROP KEYSPACE {$keyspace}_int");
+	$db->exec ("DROP KEYSPACE {$keyspace}_text");
+} catch (Exception $e) {}
+
 $db->exec ("CREATE KEYSPACE {$keyspace}_int with strategy_class = 'SimpleStrategy' and strategy_options:replication_factor=1;");
 $db->exec ("CREATE KEYSPACE {$keyspace}_text with strategy_class = 'SimpleStrategy' and strategy_options:replication_factor=1;");
 
 $db->exec ("USE {$keyspace}_int");
 $db->exec ("CREATE TABLE my_cf (my_key text PRIMARY KEY)
-            WITH comparator = int AND default_validation = int;");
+            WITH comparator = bigint AND default_validation = bigint;");
 
 $db->exec ("UPDATE my_cf SET 10 = 100, 20 = 200 WHERE my_key = 'aa'");
 

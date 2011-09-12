@@ -20,33 +20,33 @@ $db->exec ("CREATE KEYSPACE {$keyspace} with strategy_class = 'SimpleStrategy' a
 $db->exec ("USE {$keyspace}");
 $db->exec ("CREATE COLUMNFAMILY types_test(
 				my_key text PRIMARY KEY,
-				my_bytea bytea,
+				my_blob 'blob',
 				my_ascii ascii,
 				my_text text,
 				my_varchar varchar,
 				my_uuid uuid,
-				my_varint varint,
 				my_int int,
+				my_varint varint,
 				my_bigint bigint)");
 
 
-$stmt = $db->prepare ("INSERT INTO types_test(my_key, my_bytea, my_ascii, my_text, my_varchar, my_uuid, my_varint, my_int, my_bigint)
-									VALUES   (:key,   :bytea,   :ascii,   :text,   :varchar,   :uuid,   :varint,   :int,   :bigint)");
+$stmt = $db->prepare ("INSERT INTO types_test(my_key, my_blob, my_ascii, my_text, my_varchar, my_uuid, my_int, my_varint, my_bigint)
+									VALUES   (:key,   :blob,   :ascii,   :text,   :varchar,   :uuid,   :int,   :varint,   :bigint)");
 
 $stmt->getColumnMeta (0);
 
 $stmt->bindValue (':key', "hello key");
-$stmt->bindValue (':bytea', "74686520616e73776572206973203432");
+$stmt->bindValue (':blob', "74686520616e73776572206973203432");
 $stmt->bindValue (':ascii', "hello ascii");
 $stmt->bindValue (':text', "what else than lorem ipsum? well, ∆∆∆");
 $stmt->bindValue (':varchar', "what else than more lorem ipsum?");
 $stmt->bindValue (':uuid', '5bafc990-ceb7-11e0-bd10-aa2e4924019b');
+$stmt->bindValue (':int', -5555, PDO::PARAM_INT);
 $stmt->bindValue (':varint', 123, PDO::PARAM_INT);
-$stmt->bindValue (':int', 4567, PDO::PARAM_INT);
 $stmt->bindValue (':bigint', 891011, PDO::PARAM_INT);
 $stmt->execute ();
 
-$stmt = $db->query ("SELECT my_key, my_bytea, my_ascii, my_text, my_varchar, my_uuid, my_varint, my_int, my_bigint FROM types_test");
+$stmt = $db->query ("SELECT my_key, my_blob, my_ascii, my_text, my_varchar, my_uuid, my_varint, my_int, my_bigint FROM types_test");
 $data = $stmt->fetchAll ();
 
 for ($i = 0; $i < 9; $i++)
@@ -90,9 +90,9 @@ array(12) {
   ["key_alias"]=>
   string(6) "my_key"
   ["original_column_name"]=>
-  string(8) "my_bytea"
+  string(7) "my_blob"
   ["name"]=>
-  string(8) "my_bytea"
+  string(7) "my_blob"
   ["len"]=>
   int(-1)
   ["precision"]=>
@@ -236,7 +236,7 @@ array(12) {
   ["columnfamily"]=>
   string(10) "types_test"
   ["native_type"]=>
-  string(40) "org.apache.cassandra.db.marshal.LongType"
+  string(41) "org.apache.cassandra.db.marshal.Int32Type"
   ["comparator"]=>
   string(40) "org.apache.cassandra.db.marshal.UTF8Type"
   ["default_validation_class"]=>
