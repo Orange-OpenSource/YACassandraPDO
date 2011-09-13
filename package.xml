@@ -13,18 +13,16 @@
  <date>2011-09-13</date>
  <time>12:00:00</time>
  <version>
-  <release>0.2.0</release>
-  <api>0.2.0</api>
+  <release>0.2.1</release>
+  <api>0.2.1</api>
  </version>
  <stability>
   <release>beta</release>
   <api>beta</api>
  </stability>
- <license>PHP License</license>
+ <license>Apache License</license>
  <notes>
-- Switched to Cassandra 1.x branch and dropped support for 0.8.x.
-- Fixed tests to new Cassandra types
-- Use the new schema information returned with CqlResults
+- Removed rowset iterators
  </notes>
  <contents>
   <dir name="/">
@@ -74,7 +72,6 @@
    <file name="tests/024-multiplekeyspaces.phpt" role="doc" />
    <file name="tests/025-activecolumnfamily.phpt" role="doc" />
    <file name="tests/026-bigint.phpt" role="doc" />
-   <file name="tests/027-rowsetiterator.phpt" role="doc" />
    <file name="tests/config.inc-dist" role="doc" />
    <file name="tests/skipif.inc" role="doc" />
   </dir>

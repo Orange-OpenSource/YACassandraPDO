@@ -111,7 +111,6 @@ typedef struct {
 
 	ColumnMap original_column_names;
 	ColumnMap column_name_labels;
-	zend_bool rowset_iterator;
 } pdo_cassandra_stmt;
 /* }}} */
 
@@ -132,7 +131,6 @@ enum pdo_cassandra_constant {
 	PDO_CASSANDRA_ATTR_COMPRESSION,
 	PDO_CASSANDRA_ATTR_THRIFT_DEBUG,
 	PDO_CASSANDRA_ATTR_PRESERVE_VALUES,
-	PDO_CASSANDRA_ATTR_ROWSET_ITERATOR,
 	PDO_CASSANDRA_ATTR_MAX
 };
 /* }}} */

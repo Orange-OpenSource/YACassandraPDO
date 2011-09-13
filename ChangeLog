@@ -1,3 +1,6 @@
+0.2.1
+- Removed rowset iterators
+
 0.2.0
 - Switched to Cassandra 1.x branch and dropped support for 0.8.x.
 - Fixed tests to new Cassandra types

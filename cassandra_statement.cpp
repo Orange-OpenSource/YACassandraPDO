@@ -133,7 +133,6 @@ static int pdo_cassandra_stmt_execute(pdo_stmt_t *stmt TSRMLS_DC)
 static zend_bool pdo_cassandra_add_column(pdo_stmt_t *stmt, const std::string &name, int order)
 {
 	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
-	pdo_cassandra_db_handle *H = static_cast <pdo_cassandra_db_handle *>(S->H);
 
 	try {
 		S->original_column_names.left.at(name);
@@ -177,19 +176,11 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 		// Set column names and labels if we don't have them already
 		if (!S->original_column_names.size()) {
 
-			if (S->rowset_iterator) {
-				for (std::vector<Column>::iterator col_it = (*S->it).columns.begin(); col_it < (*S->it).columns.end(); col_it++) {
+			// Get unique column names
+			for (std::vector<CqlRow>::iterator it = S->result.get()->rows.begin(); it < S->result.get()->rows.end(); it++) {
+				for (std::vector<Column>::iterator col_it = (*it).columns.begin(); col_it < (*it).columns.end(); col_it++) {
 					if (pdo_cassandra_add_column(stmt, (*col_it).name, order)) {
 						order++;
-					}
-				}
-			} else {
-				// Get unique column names
-				for (std::vector<CqlRow>::iterator it = S->result.get()->rows.begin(); it < S->result.get()->rows.end(); it++) {
-					for (std::vector<Column>::iterator col_it = (*it).columns.begin(); col_it < (*it).columns.end(); col_it++) {
-						if (pdo_cassandra_add_column(stmt, (*col_it).name, order)) {
-							order++;
-						}
 					}
 				}
 			}
@@ -197,9 +188,7 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 		}
 		stmt->column_count = S->original_column_names.size();
 	} else {
-		if (!S->rowset_iterator) {
-			S->it++;
-		}
+		S->it++;
 	}
 
 	if (S->it == S->result.get()->rows.end()) {
@@ -462,67 +451,6 @@ static int pdo_cassandra_stmt_dtor(pdo_stmt_t *stmt TSRMLS_DC)
 }
 /* }}} */
 
-int pdo_cassandra_stmt_next_rowset(pdo_stmt_t *stmt TSRMLS_DC)
-{
-	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
-
-	if (!S->rowset_iterator) {
-		pdo_cassandra_error_exception(stmt->dbh, PDO_CASSANDRA_GENERAL_ERROR, "PDO::nextRowset can only be used with rowset iterator", "");
-		return 0;
-	}
-
-	S->it++;
-
-	S->original_column_names.clear();
-	S->column_name_labels.clear();
-
-	if (S->it == S->result.get()->rows.end()) {
-		S->has_iterator = 0;
-		return 0;
-	}
-
-	int order = 0;
-	for (std::vector<Column>::iterator col_it = (*S->it).columns.begin(); col_it < (*S->it).columns.end(); col_it++) {
-		if (pdo_cassandra_add_column(stmt, (*col_it).name, order)) {
-			order++;
-		}
-	}
-	stmt->column_count = order;
-	return 1;
-}
-
-static int pdo_cassandra_stmt_set_attr(pdo_stmt_t *stmt, long attr, zval *val TSRMLS_DC)
-{
-	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
-	pdo_cassandra_constant attribute = static_cast <pdo_cassandra_constant>(attr);
-
-
-	if (attribute == PDO_CASSANDRA_ATTR_ROWSET_ITERATOR) {
-		convert_to_boolean(val);
-
-		if (Z_BVAL_P(val) && stmt->executed) {
-			pdo_cassandra_error_exception(stmt->dbh, PDO_CASSANDRA_GENERAL_ERROR, "Rowset iterator attribute must be set before executing the statement", "");
-			return 0;
-		}
-
-		S->rowset_iterator = Z_BVAL_P(val);
-		return 1;
-	}
-	return 0;
-}
-
-static int pdo_cassandra_stmt_get_attr(pdo_stmt_t *stmt, long attr, zval *val TSRMLS_DC)
-{
-	pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
-	pdo_cassandra_constant attribute = static_cast <pdo_cassandra_constant>(attr);
-
-	if (attribute == PDO_CASSANDRA_ATTR_ROWSET_ITERATOR) {
-		ZVAL_BOOL(val, S->rowset_iterator);
-		return 1;
-	}
-	return 0;
-}
-
 struct pdo_stmt_methods cassandra_stmt_methods = {
 	pdo_cassandra_stmt_dtor,
 	pdo_cassandra_stmt_execute,
@@ -530,10 +458,10 @@ struct pdo_stmt_methods cassandra_stmt_methods = {
 	pdo_cassandra_stmt_describe,
 	pdo_cassandra_stmt_get_column,
 	NULL, /* param_hook */
-	pdo_cassandra_stmt_set_attr, /* set_attr */
-	pdo_cassandra_stmt_get_attr, /* get_attr */
+	NULL, /* set_attr */
+	NULL, /* get_attr */
 	pdo_cassandra_stmt_get_column_meta,
-	pdo_cassandra_stmt_next_rowset,
+	NULL, /* next rowset */
 	pdo_cassandra_stmt_cursor_close
 };
 
