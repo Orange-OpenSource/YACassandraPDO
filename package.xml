@@ -10,11 +10,11 @@
   <email>mkoppanen@php.net</email>
   <active>yes</active>
  </lead>
- <date>2011-08-28</date>
+ <date>2011-09-13</date>
  <time>12:00:00</time>
  <version>
-  <release>0.1.4</release>
-  <api>0.1.4</api>
+  <release>0.2.0</release>
+  <api>0.2.0</api>
  </version>
  <stability>
   <release>beta</release>
@@ -22,12 +22,9 @@
  </stability>
  <license>PHP License</license>
  <notes>
-- Updated handling for arbitrary size integers that overflow platform long.
-  Integer overflow now causes error 22003
-- Fixed thread-safe build
-- Added new option PDO::CASSANDRA_ATTR_PRESERVE_VALUES
-- Fixed error in handling sparse columns when statement is executed 
-  multiple times
+- Switched to Cassandra 1.x branch and dropped support for 0.8.x.
+- Fixed tests to new Cassandra types
+- Use the new schema information returned with CqlResults
  </notes>
  <contents>
   <dir name="/">
@@ -77,6 +74,7 @@
    <file name="tests/024-multiplekeyspaces.phpt" role="doc" />
    <file name="tests/025-activecolumnfamily.phpt" role="doc" />
    <file name="tests/026-bigint.phpt" role="doc" />
+   <file name="tests/027-rowsetiterator.phpt" role="doc" />
    <file name="tests/config.inc-dist" role="doc" />
    <file name="tests/skipif.inc" role="doc" />
   </dir>

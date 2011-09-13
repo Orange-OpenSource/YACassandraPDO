@@ -1,3 +1,8 @@
+0.2.0
+- Switched to Cassandra 1.x branch and dropped support for 0.8.x.
+- Fixed tests to new Cassandra types
+- Use the new schema information returned with CqlResults
+
 0.1.4
 - Updated handling for arbitrary size integers that overflow platform long.
   Integer overflow now causes error 22003
