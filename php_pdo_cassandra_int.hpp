@@ -93,6 +93,7 @@ typedef struct {
 	pdo_cassandra_einfo einfo;
 	std::string active_keyspace;
 	std::string active_columnfamily;
+	std::string cql_version;
 	KsDef description;
 	zend_bool has_description;
 	zend_bool preserve_values;

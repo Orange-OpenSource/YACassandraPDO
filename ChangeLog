@@ -1,3 +1,9 @@
+0.2.2
+- Switched to Cassandra 1.1.1 thrift interface
+- dbname in dsn sets the keyspace at startup
+- cqlversion in dsn sets the cql version at startup
+- Fixed Authentication for SimpleAuthority/SimpleAuthenticator
+
 0.2.1
 - Removed rowset iterators
 

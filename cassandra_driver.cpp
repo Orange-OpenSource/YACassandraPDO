@@ -139,19 +139,31 @@ static zend_bool parse_dsn(pdo_dbh_t *dbh, pdo_cassandra_db_handle *H, const cha
 	while (pch != NULL) {
 		char *host = NULL;
 		int port = 0;
+		char *dbname = NULL;
+		char *cqlversion = NULL;
 
 		struct pdo_data_src_parser vars[] = {
-			{ "host",	"",	0 },
-			{ "port",	"",	0 },
+			{ "host",	"127.0.0.1",	0 },
+			{ "port",	"9160",	0 },
+			{ "dbname",      NULL,  0 },
+			{ "cqlversion", NULL, 0 }
 		};
 
-		if (php_pdo_parse_data_source(pch, strlen(pch), vars, 2) != 2) {
-			efree(ptr);
-			return 0;
-		}
+		php_pdo_parse_data_source(pch, strlen(pch), vars, 4);
 
 		host = vars[0].optval;
 		port = atoi(vars[1].optval);
+		dbname = vars[2].optval;
+		cqlversion = vars[3].optval;
+		
+		if ( dbname ) {
+		  H->active_keyspace = dbname;
+		}
+		if ( cqlversion ) {
+		  H->cql_version = cqlversion ;
+		}
+		
+
 #if 0
 		std::cerr << "Adding host=[" << host << "] port=[" << port << "]" << std::endl;
 #endif
@@ -213,11 +225,10 @@ static void php_cassandra_handle_auth(pdo_dbh_t *dbh, pdo_cassandra_db_handle *H
 		std::string user = dbh->username;
 		std::string pass = dbh->password;
 
-		std::map<std::string, std::string> auth_value;
-		auth_value.insert(std::pair<std::string, std::string>(user, pass));
-
 		AuthenticationRequest auth_request;
-		auth_request.credentials = auth_value;
+		auth_request.credentials["username"] = user;
+		auth_request.credentials["password"] = pass;
+
 		H->client->login(auth_request);
 	}
 }
@@ -277,7 +288,17 @@ static int pdo_cassandra_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSR
 
 	try {
 		H->transport->open();
+
+		if ( ! H->active_keyspace.empty() ) {
+			H->client->set_keyspace(H->active_keyspace);
+		}
+		
 		php_cassandra_handle_auth (dbh, H);
+		
+		if ( ! H->cql_version.empty() ) {
+			H->client->set_cql_version(H->cql_version);
+		}
+
 		return 1;
 	} catch (NotFoundException &e) {
 		pdo_cassandra_error_exception(dbh, PDO_CASSANDRA_NOT_FOUND, "%s", e.what());
