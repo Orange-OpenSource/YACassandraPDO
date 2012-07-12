@@ -9,9 +9,9 @@ require_once(dirname(__FILE__) . '/config.inc');
 $db = new PDO($dsn, $username, $password);
 
 try {
-	$db->beginTransaction();
+    $db->beginTransaction();
 } catch (PDOException $e) {
-	echo $e->getMessage () . PHP_EOL;
+    echo $e->getMessage () . PHP_EOL;
 }
 
 echo "OK";

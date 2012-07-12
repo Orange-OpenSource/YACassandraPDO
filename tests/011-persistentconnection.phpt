@@ -8,16 +8,16 @@ Test initialization of persistent connections
 require_once(dirname(__FILE__) . '/config.inc');
 
 $db = new PDO($dsn, $username, $password, array (
-    			PDO::ATTR_PERSISTENT => true
-			));
+                  PDO::ATTR_PERSISTENT => true
+             ));
 
 echo "OK";
 
 $db = null;
 
 $db1 = new PDO($dsn, null, null, array (
-    			PDO::ATTR_PERSISTENT => true
-			));
+                   PDO::ATTR_PERSISTENT => true
+              ));
 
 ?>
 --EXPECT--

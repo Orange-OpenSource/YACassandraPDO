@@ -6,7 +6,7 @@ Test very large integers
 <?php
 
 if (!extension_loaded ('gmp'))
-	die ('skip The test requires gmp extension');
+    die ('skip The test requires gmp extension');
 
 require_once(dirname(__FILE__) . '/config.inc');
 
@@ -20,17 +20,17 @@ $db->exec ("UPDATE verylargeint_test SET testval = 50000000000000000000000 WHERE
 $stmt = $db->query ("SELECT testval FROM verylargeint_test WHERE my_key = 'aa'");
 
 try {
-	$row = $stmt->fetch (PDO::FETCH_ASSOC);
+    $row = $stmt->fetch (PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-	echo $e->getMessage() . PHP_EOL;
-	
-	$db->setAttribute(PDO::CASSANDRA_ATTR_PRESERVE_VALUES, true);
-	
-	$stmt = $db->query ("SELECT testval FROM verylargeint_test WHERE my_key = 'aa'");
-	$row = $stmt->fetch (PDO::FETCH_ASSOC);
+    echo $e->getMessage() . PHP_EOL;
 
-	$g = gmp_init(bin2hex($row['testval']), 16);
-	echo gmp_strval ($g) . PHP_EOL;
+    $db->setAttribute(PDO::CASSANDRA_ATTR_PRESERVE_VALUES, true);
+
+    $stmt = $db->query ("SELECT testval FROM verylargeint_test WHERE my_key = 'aa'");
+    $row = $stmt->fetch (PDO::FETCH_ASSOC);
+
+    $g = gmp_init(bin2hex($row['testval']), 16);
+    echo gmp_strval ($g) . PHP_EOL;
 }
 
 pdo_cassandra_done ($db, $keyspace);

@@ -11,8 +11,8 @@ $db = new PDO($dsn, $username, $password);
 pdo_cassandra_init($db);
 
 try {
-	$db->exec ("DROP KEYSPACE {$keyspace}_int");
-	$db->exec ("DROP KEYSPACE {$keyspace}_text");
+    $db->exec ("DROP KEYSPACE {$keyspace}_int");
+    $db->exec ("DROP KEYSPACE {$keyspace}_text");
 } catch (Exception $e) {}
 
 $db->exec ("CREATE KEYSPACE {$keyspace}_int with strategy_class = 'SimpleStrategy' and strategy_options:replication_factor=1;");

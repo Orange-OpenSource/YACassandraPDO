@@ -19,7 +19,7 @@
      Due to nature of Cassandra the <link linkend="pdo.exec">exec</link>
      method doesn't return the number of affected rows for
      DELETE and UPDATE queries.
-    </para>	
+    </para>
    </section>
    &reference.pdo-cassandra.configure;
    &reference.pdo-cassandra.constants;

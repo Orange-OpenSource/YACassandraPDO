@@ -11,7 +11,7 @@ $db = new PDO($dsn, $username, $password);
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 try {
-	$db->exec ("DROP KEYSPACE {$keyspace}");
+    $db->exec ("DROP KEYSPACE {$keyspace}");
 } catch (PDOException $e) {}
 
 $uuid = '5bafc990-ceb7-11e0-bd10-aa2e4924019b';
@@ -19,19 +19,19 @@ $uuid = '5bafc990-ceb7-11e0-bd10-aa2e4924019b';
 $db->exec ("CREATE KEYSPACE {$keyspace} with strategy_class = 'SimpleStrategy' and strategy_options:replication_factor=1;");
 $db->exec ("USE {$keyspace}");
 $db->exec ("CREATE COLUMNFAMILY types_test(
-				my_key text PRIMARY KEY,
-				my_blob 'blob',
-				my_ascii ascii,
-				my_text text,
-				my_varchar varchar,
-				my_uuid uuid,
-				my_varint varint,
-				my_int int,
-				my_bigint bigint)");
+                my_key text PRIMARY KEY,
+                my_blob 'blob',
+                my_ascii ascii,
+                my_text text,
+                my_varchar varchar,
+                my_uuid uuid,
+                my_varint varint,
+                my_int int,
+                my_bigint bigint)");
 
 
 $stmt = $db->prepare ("INSERT INTO types_test(my_key, my_blob, my_ascii, my_text, my_varchar, my_uuid, my_varint, my_int, my_bigint)
-									VALUES   (:key,   :blob,   :ascii,   :text,   :varchar,   :uuid,   :varint,   :int,   :bigint)");
+                                    VALUES   (:key,   :blob,   :ascii,   :text,   :varchar,   :uuid,   :varint,   :int,   :bigint)");
 
 $stmt->bindValue (':key', "hello key");
 $stmt->bindValue (':blob', "74686520616e73776572206973203432");

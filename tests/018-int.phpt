@@ -11,7 +11,7 @@ $db = new PDO($dsn, $username, $password);
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 try {
-	$db->exec ("DROP KEYSPACE {$keyspace}");
+    $db->exec ("DROP KEYSPACE {$keyspace}");
 } catch (PDOException $e) {}
 
 $db->exec ("CREATE KEYSPACE {$keyspace} with strategy_class = 'SimpleStrategy' and strategy_options:replication_factor=1;");

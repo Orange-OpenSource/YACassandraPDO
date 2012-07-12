@@ -33,7 +33,7 @@
    <!-- source files -->
    <file name="cassandra_driver.cpp" role="src"/>
    <file name="cassandra_statement.cpp" role="src"/>
-   
+
    <!-- Headers -->
    <file name="php_pdo_cassandra.hpp" role="src">
     <tasks:replace from="@PACKAGE_VERSION@" to="version" type="package-info" />

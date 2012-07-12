@@ -13,11 +13,11 @@ pdo_cassandra_init ($db, $keyspace);
 $result = $db->query ("SELECT my_key, full_name FROM users;");
 
 foreach ($result as $row) {
-	var_dump ($row);
+    var_dump ($row);
 }
 
 foreach ($result as $row) {
-	var_dump ($row);
+    var_dump ($row);
 }
 
 pdo_cassandra_done ($db, $keyspace);

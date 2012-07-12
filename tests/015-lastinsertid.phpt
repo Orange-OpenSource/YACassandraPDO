@@ -11,10 +11,10 @@ $db = new PDO($dsn, $username, $password);
 pdo_cassandra_init ($db, $keyspace);
 
 try {
-	$db->lastInsertId ();
-	echo 'fail';
+    $db->lastInsertId ();
+    echo 'fail';
 } catch (PDOException $e) {
-	echo 'success' . PHP_EOL;
+    echo 'success' . PHP_EOL;
 }
 
 pdo_cassandra_done ($db, $keyspace);
