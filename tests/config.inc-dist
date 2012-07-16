@@ -1,6 +1,10 @@
 <?php
 // DSN to use for tests
-$dsn = 'cassandra:host=127.0.0.1;port=9160';
+$dsn = 'cassandra:host=127.0.0.1;port=9160;cqlversion=2.0.0';
+
+// set username and password to null for no authentication
+$username = null;
+$password = null;
 
 // Warning: the keyspace will be truncated during tests
 $keyspace = "phptests";

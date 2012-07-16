@@ -6,7 +6,7 @@ Test authentication
 <?php
 require_once(dirname(__FILE__) . '/config.inc');
 
-$db = new PDO($dsn, 'mikko', 'okkim');
+$db = new PDO($dsn, $username, $password);
 echo "OK";
 
 ?>

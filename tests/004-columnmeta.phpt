@@ -6,7 +6,7 @@ Test column metadata
 <?php
 require_once(dirname(__FILE__) . '/config.inc');
 
-$db = new PDO($dsn);
+$db = new PDO($dsn, $username, $password);
 
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 

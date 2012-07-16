@@ -6,12 +6,12 @@ Test sparse columns
 <?php
 require_once(dirname(__FILE__) . '/config.inc');
 
-$db = new PDO($dsn);
+$db = new PDO($dsn, $username, $password);
 
 pdo_cassandra_init ($db, $keyspace);
 
 $db->exec ("CREATE COLUMNFAMILY extended_users (
-			my_key varchar PRIMARY KEY);");
+			my_key varchar PRIMARY KEY, dummy text);");
 
 $db->exec ("INSERT INTO extended_users(my_key, third) VALUES('two columns', 'aaa')");
 $db->exec ("INSERT INTO extended_users(my_key, secondrowdata, thirdcolumn) VALUES('three columns', 'Flat 2, Street 2', 'metadata')");

@@ -6,13 +6,13 @@ Test that active columnfamily is tracked correctly
 <?php
 require_once(dirname(__FILE__) . '/config.inc');
 
-$db = new PDO($dsn);
+$db = new PDO($dsn, $username, $password);
 
 pdo_cassandra_init ($db, $keyspace);
 
-$db->exec ("CREATE TABLE my_cf1 (my_key1 text PRIMARY KEY)");
-$db->exec ("CREATE TABLE my_cf2 (my_key2 text PRIMARY KEY)");
-$db->exec ("CREATE TABLE my_cf3 (my_key3 text PRIMARY KEY)");
+$db->exec ("CREATE TABLE my_cf1 (my_key1 text PRIMARY KEY, first_cf text)");
+$db->exec ("CREATE TABLE my_cf2 (my_key2 text PRIMARY KEY, second_cf text)");
+$db->exec ("CREATE TABLE my_cf3 (my_key3 text PRIMARY KEY, third_cf text)");
 
 $db->exec ("UPDATE my_cf1 SET first_cf = 'first1' WHERE my_key1 = 'aa1'");
 $db->exec ("UPDATE my_cf1 SET first_cf = 'first2' WHERE my_key1 = 'aa2'");

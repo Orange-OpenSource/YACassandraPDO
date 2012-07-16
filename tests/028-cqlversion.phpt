@@ -7,6 +7,7 @@ Test cql versions
 require_once(dirname(__FILE__) . '/config.inc');
 
 // Test default 2.0.0
+$dsn2 = str_replace(';cqlversion=2.0.0','',$dsn);
 $db = new PDO($dsn, $username, $password);
 
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -24,8 +25,7 @@ $db->exec ("CREATE TABLE comparator_test (my_key text PRIMARY KEY)
 
 
 // Test 3.0.0
-
-$dsn2 = $dsn . ';cqlversion=3.0.0;dbname='. $keyspace;
+$dsn2 = str_replace('2.0.0','3.0.0',$dsn) . ';dbname='. $keyspace;
 $db = new PDO($dsn2, $username, $password);
 
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

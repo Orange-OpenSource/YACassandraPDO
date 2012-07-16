@@ -6,7 +6,7 @@ Test fetching grouped columns
 <?php
 require_once(dirname(__FILE__) . '/config.inc');
 
-$db = new PDO($dsn);
+$db = new PDO($dsn, $username, $password);
 
 pdo_cassandra_init ($db, $keyspace);
 
