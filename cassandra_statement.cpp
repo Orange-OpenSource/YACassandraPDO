@@ -215,6 +215,7 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
     if (!real_type.compare("IntegerType") ||
         !real_type.compare("Int32Type") ||
         !real_type.compare("LongType") ||
+        !real_type.compare("DateType") ||
         !real_type.compare("CounterColumnType")) {
         return PDO_PARAM_INT;
     }
