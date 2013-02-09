@@ -19,6 +19,7 @@
 
 static pdo_param_type pdo_cassandra_get_type(const std::string &type);
 static long pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &binary);
+static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &type);
 
 static zend_bool pdo_cassandra_describe_keyspace(pdo_stmt_t *stmt TSRMLS_DC)
 {
@@ -223,6 +224,29 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
 }
 /* }}} */
 
+/** {{{ pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &type)
+*/
+static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &type)
+{
+    std::string real_type;
+
+    if (type.find("org.apache.cassandra.db.marshal.") != std::string::npos) {
+        real_type = type.substr(::strlen("org.apache.cassandra.db.marshal."));
+    } else {
+        real_type = type;
+    }
+
+    if (!real_type.compare("IntegerType") ||
+        !real_type.compare("Int32Type")) {
+        return PDO_CASSANDRA_TYPE_INTEGER;
+    }
+    if (!real_type.compare("LongType")) {
+        return PDO_CASSANDRA_TYPE_LONG;
+    }
+    return PDO_CASSANDRA_TYPE_UTF8;
+}
+/* }}} */
+
 /** {{{ static long pdo_cassandra_marshal_numeric(const std::string &binary)
 */
 static long pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &binary)
@@ -305,9 +329,24 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
     // Do we have data for this column?
     for (std::vector<Column>::iterator col_it = (*S->it).columns.begin(); col_it < (*S->it).columns.end(); col_it++) {
         if (!current_column.compare(0, current_column.size(), (*col_it).name.c_str(), (*col_it).name.size())) {
-            switch (stmt->columns[colno].param_type)
+
+            pdo_cassandra_type lparam_type;
+    	    lparam_type = pdo_cassandra_get_cassandra_type(S->result.get ()->schema.value_types [current_column]);
+    	    switch (lparam_type)
             {
-                case PDO_PARAM_INT:
+                case PDO_CASSANDRA_TYPE_INTEGER:
+                {
+                    long value = (int) pdo_cassandra_marshal_numeric(stmt, (*col_it).value);
+                    long *p    = (long *) emalloc(sizeof(long));
+                    memcpy(p, &value, sizeof(long));
+
+                    *ptr          = (char *)p;
+                    *len          = sizeof(long);
+                    *caller_frees = 1;
+                }
+                break;
+
+                case PDO_CASSANDRA_TYPE_LONG:
                 {
                     long value = (long) pdo_cassandra_marshal_numeric(stmt, (*col_it).value);
                     long *p    = (long *) emalloc(sizeof(long));
