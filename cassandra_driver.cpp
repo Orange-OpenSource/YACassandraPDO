@@ -428,7 +428,7 @@ static long pdo_cassandra_handle_execute(pdo_dbh_t *dbh, const char *sql, long s
         std::string query(sql);
 
         CqlResult result;
-        H->client->execute_cql_query(result, query, (H->compression ? Compression::GZIP : Compression::NONE));
+        H->client->execute_cql3_query(result, query, (H->compression ? Compression::GZIP : Compression::NONE), ConsistencyLevel::ONE);
 
         if (result.type == CqlResultType::INT) {
             return result.num;
