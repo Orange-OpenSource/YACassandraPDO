@@ -220,6 +220,9 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
         !real_type.compare("CounterColumnType")) {
         return PDO_PARAM_INT;
     }
+    if (!real_type.compare("BooleanType")) {
+        return PDO_PARAM_BOOL;
+    }
     return PDO_PARAM_STR;
 }
 /* }}} */
@@ -243,6 +246,11 @@ static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &ty
     if (!real_type.compare("LongType")) {
         return PDO_CASSANDRA_TYPE_LONG;
     }
+
+    if (!real_type.compare("BooleanType")) {
+        return PDO_CASSANDRA_TYPE_BOOLEAN;
+    }
+
     return PDO_CASSANDRA_TYPE_UTF8;
 }
 /* }}} */
