@@ -14,13 +14,12 @@ try {
     $db->exec ("DROP KEYSPACE {$keyspace}");
 } catch (PDOException $e) {}
 
-$db->exec ("CREATE KEYSPACE {$keyspace} with strategy_class = 'SimpleStrategy' and strategy_options:replication_factor=1;");
+$db->exec ("CREATE KEYSPACE {$keyspace} WITH REPLICATION = {'CLASS' : 'SimpleStrategy', 'replication_factor': 1}");
 $db->exec ("USE {$keyspace}");
 
-$db->exec ("CREATE TABLE test_preserve (my_key text PRIMARY KEY)
-            WITH comparator = int AND default_validation = int;");
+$db->exec ("CREATE TABLE test_preserve (my_key text PRIMARY KEY, first int, second int)");
 
-$db->exec ("UPDATE test_preserve SET 10 = 100, 20 = 200 WHERE my_key = 'aa'");
+$db->exec ("UPDATE test_preserve SET first = 100, second = 200 WHERE my_key = 'aa'");
 $stmt = $db->prepare ("SELECT * FROM test_preserve WHERE my_key = 'aa'");
 
 echo "-- preserve_values=no" . PHP_EOL;
@@ -42,9 +41,9 @@ array(1) {
   array(3) {
     ["my_key"]=>
     string(2) "aa"
-    [10]=>
+    ["first"]=>
     int(100)
-    [20]=>
+    ["second"]=>
     int(200)
   }
 }
@@ -54,9 +53,9 @@ array(1) {
   array(3) {
     ["my_key"]=>
     string(2) "aa"
-    [10]=>
+    ["first"]=>
     string(4) "%s"
-    [20]=>
+    ["second"]=>
     string(4) "%s"
   }
 }
