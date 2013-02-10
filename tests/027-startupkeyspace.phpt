@@ -14,7 +14,7 @@ try {
 	$db->exec ("DROP KEYSPACE {$keyspace}");
 } catch (PDOException $e) {}
 
-$db->exec ("CREATE KEYSPACE {$keyspace} with strategy_class = 'SimpleStrategy' and strategy_options:replication_factor=1;");
+$db->exec ("CREATE KEYSPACE {$keyspace}  WITH REPLICATION = {'CLASS' : 'SimpleStrategy', 'replication_factor': 1}");
 
 $dsn2 = $dsn . ';dbname=' . $keyspace;
 

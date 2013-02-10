@@ -16,11 +16,11 @@ try {
 
 $uuid = '5bafc990-ceb7-11e0-bd10-aa2e4924019b';
 
-$db->exec ("CREATE KEYSPACE {$keyspace} with strategy_class = 'SimpleStrategy' and strategy_options:replication_factor=1;");
+$db->exec ("CREATE KEYSPACE {$keyspace}  WITH REPLICATION = {'CLASS' : 'SimpleStrategy', 'replication_factor': 1}");
 $db->exec ("USE {$keyspace}");
 $db->exec ("CREATE COLUMNFAMILY types_test(
                 my_key text PRIMARY KEY,
-                my_blob 'blob',
+                my_blob blob,
                 my_ascii ascii,
                 my_text text,
                 my_varchar varchar,

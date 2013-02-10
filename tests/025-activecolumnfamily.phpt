@@ -44,27 +44,9 @@ echo "OK";
 --EXPECT--
 array(2) {
   ["my_key2"]=>
-  string(3) "aa2"
-  ["second_cf"]=>
-  string(7) "second2"
-}
-array(2) {
-  ["my_key1"]=>
-  string(3) "aa2"
-  ["first_cf"]=>
-  string(6) "first2"
-}
-array(2) {
-  ["my_key3"]=>
-  string(3) "aa2"
-  ["third_cf"]=>
-  string(6) "third2"
-}
-array(2) {
-  ["my_key3"]=>
   string(3) "aa1"
-  ["third_cf"]=>
-  string(6) "third1"
+  ["second_cf"]=>
+  string(7) "second1"
 }
 array(2) {
   ["my_key1"]=>
@@ -73,9 +55,27 @@ array(2) {
   string(6) "first1"
 }
 array(2) {
-  ["my_key2"]=>
+  ["my_key3"]=>
   string(3) "aa1"
+  ["third_cf"]=>
+  string(6) "third1"
+}
+array(2) {
+  ["my_key3"]=>
+  string(3) "aa2"
+  ["third_cf"]=>
+  string(6) "third2"
+}
+array(2) {
+  ["my_key1"]=>
+  string(3) "aa2"
+  ["first_cf"]=>
+  string(6) "first2"
+}
+array(2) {
+  ["my_key2"]=>
+  string(3) "aa2"
   ["second_cf"]=>
-  string(7) "second1"
+  string(7) "second2"
 }
 OK
