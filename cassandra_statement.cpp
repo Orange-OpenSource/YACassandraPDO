@@ -239,10 +239,14 @@ static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &ty
         real_type = type;
     }
 
-    if (!real_type.compare("IntegerType") ||
-        !real_type.compare("Int32Type")) {
+    if (!real_type.compare("IntegerType")) {
+        return PDO_CASSANDRA_TYPE_VARINT;
+    }
+
+    if (!real_type.compare("Int32Type")) {
         return PDO_CASSANDRA_TYPE_INTEGER;
     }
+
     if (!real_type.compare("LongType")) {
         return PDO_CASSANDRA_TYPE_LONG;
     }
@@ -322,6 +326,7 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr, unsigned long *len, int *caller_frees TSRMLS_DC)
 {
     pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
+    pdo_cassandra_db_handle *H = static_cast <pdo_cassandra_db_handle *>(S->H);
 
     std::string current_column;
     try {
@@ -339,7 +344,11 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
         if (!current_column.compare(0, current_column.size(), (*col_it).name.c_str(), (*col_it).name.size())) {
 
             pdo_cassandra_type lparam_type;
-    	    lparam_type = pdo_cassandra_get_cassandra_type(S->result.get ()->schema.value_types [current_column]);
+            if (H->preserve_values) {
+                lparam_type = PDO_CASSANDRA_TYPE_UTF8;
+            } else {
+        	    lparam_type = pdo_cassandra_get_cassandra_type(S->result.get ()->schema.value_types [current_column]);
+            }
     	    switch (lparam_type)
             {
                 case PDO_CASSANDRA_TYPE_INTEGER:
@@ -354,6 +363,7 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
                 }
                 break;
 
+                case PDO_CASSANDRA_TYPE_VARINT:
                 case PDO_CASSANDRA_TYPE_LONG:
                 {
                     long value = (long) pdo_cassandra_marshal_numeric(stmt, (*col_it).value);
