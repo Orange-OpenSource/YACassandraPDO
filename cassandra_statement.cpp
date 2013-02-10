@@ -247,7 +247,8 @@ static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &ty
         return PDO_CASSANDRA_TYPE_INTEGER;
     }
 
-    if (!real_type.compare("LongType")) {
+    if (!real_type.compare("LongType") ||
+        !real_type.compare("DateType")) {
         return PDO_CASSANDRA_TYPE_LONG;
     }
 
