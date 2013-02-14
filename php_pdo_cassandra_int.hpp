@@ -99,6 +99,7 @@ typedef struct {
     KsDef description;
     zend_bool has_description;
     zend_bool preserve_values;
+    ConsistencyLevel::type consistency;
 } pdo_cassandra_db_handle;
 /* }}} */
 
@@ -134,9 +135,23 @@ enum pdo_cassandra_constant {
     PDO_CASSANDRA_ATTR_COMPRESSION,
     PDO_CASSANDRA_ATTR_THRIFT_DEBUG,
     PDO_CASSANDRA_ATTR_PRESERVE_VALUES,
-    PDO_CASSANDRA_ATTR_MAX
+    PDO_CASSANDRA_ATTR_MAX,
+    PDO_CASSANDRA_ATTR_CONSISTENCYLEVEL
+
 };
 /* }}} */
+
+enum pdo_cassandra_consistency_level {
+    PDO_CASSANDRA_CONSISTENCYLEVEL_ONE,
+    PDO_CASSANDRA_CONSISTENCYLEVEL_QUORUM,
+    PDO_CASSANDRA_CONSISTENCYLEVEL_LOCAL_QUORUM,
+    PDO_CASSANDRA_CONSISTENCYLEVEL_ALL,
+    PDO_CASSANDRA_CONSISTENCYLEVEL_ANY,
+    PDO_CASSANDRA_CONSISTENCYLEVEL_EACH_QUORUM,
+    PDO_CASSANDRA_CONSISTENCYLEVEL_TWO,
+    PDO_CASSANDRA_CONSISTENCYLEVEL_THREE
+
+};
 
 enum pdo_cassandra_error {
     PDO_CASSANDRA_GENERAL_ERROR,
