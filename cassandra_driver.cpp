@@ -140,13 +140,12 @@ static zend_bool parse_dsn(pdo_dbh_t *dbh, pdo_cassandra_db_handle *H, const cha
         char *host = NULL;
         int port = 0;
         char *dbname = NULL;
-        char *cqlversion = NULL;
+        char *cqlversion = "3.0.0";
 
         struct pdo_data_src_parser vars[] = {
             { "host",       "127.0.0.1", 0 },
             { "port",       "9160",      0 },
-            { "dbname",     NULL,        0 },
-            { "cqlversion", NULL,        0 }
+            { "dbname",     NULL,        0 }
         };
 
         php_pdo_parse_data_source(pch, strlen(pch), vars, 4);
@@ -154,7 +153,6 @@ static zend_bool parse_dsn(pdo_dbh_t *dbh, pdo_cassandra_db_handle *H, const cha
         host = vars[0].optval;
         port = atoi(vars[1].optval);
         dbname = vars[2].optval;
-        cqlversion = vars[3].optval;
 
         if ( dbname ) {
             H->active_keyspace = dbname;
