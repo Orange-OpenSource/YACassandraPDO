@@ -149,7 +149,7 @@ static zend_bool parse_dsn(pdo_dbh_t *dbh, pdo_cassandra_db_handle *H, const cha
             { "dbname",     NULL,        0 }
         };
 
-        php_pdo_parse_data_source(pch, strlen(pch), vars, 4);
+        php_pdo_parse_data_source(pch, strlen(pch), vars, 3);
 
         host = vars[0].optval;
         port = atoi(vars[1].optval);
