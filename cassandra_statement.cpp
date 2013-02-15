@@ -18,7 +18,8 @@
 #include "php_pdo_cassandra_int.hpp"
 
 static pdo_param_type pdo_cassandra_get_type(const std::string &type);
-static long pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &binary);
+template <class T>
+T pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &binary);
 static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &type);
 
 static zend_bool pdo_cassandra_describe_keyspace(pdo_stmt_t *stmt TSRMLS_DC)
@@ -151,7 +152,7 @@ static zend_bool pdo_cassandra_add_column(pdo_stmt_t *stmt, const std::string &n
         if (name_type == PDO_PARAM_INT && name.size() <= 8) {
             char label[96];
             size_t len;
-            long namel = (long) pdo_cassandra_marshal_numeric(stmt, name);
+            long namel = pdo_cassandra_marshal_numeric<long>(stmt, name);
             len = snprintf(label, 96, "%ld", namel);
             S->column_name_labels.insert(ColumnMap::value_type(std::string(label, len), order));
         }
@@ -261,21 +262,23 @@ static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &ty
 /* }}} */
 
 /** {{{ static long pdo_cassandra_marshal_numeric(const std::string &binary)
-*/
-static long pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &binary)
+ ** Reads some integer value from a raw stream
+ ** Receiver size has to be the same as the binary size to prevent error on negative values
+ */
+template <class T>
+T pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &binary)
 {
-    if (sizeof(long) < binary.size()) {
-        pdo_cassandra_error(stmt->dbh, PDO_CASSANDRA_INTEGER_CONVERSION_ERROR, "The value is too large for integer datatype", "");
-        return LONG_MAX;
+    if (sizeof(T) != binary.size()) {
+        pdo_cassandra_error(stmt->dbh, PDO_CASSANDRA_INTEGER_CONVERSION_ERROR,
+							"pdo_cassandra_marshal_numeric: Binary stream and receiver size doesn't match", "");
+        return 0;
     }
 
     const unsigned char *bytes = reinterpret_cast <const unsigned char *>(binary.c_str());
-
-    long val = 0;
+    T val = 0;
     size_t siz = binary.size ();
     for (size_t i = 0; i < siz; i++)
         val = val << 8 | bytes[i];
-
     return val;
 }
 /* }}} */
@@ -354,7 +357,9 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
             {
                 case PDO_CASSANDRA_TYPE_INTEGER:
                 {
-                    long value = (int) pdo_cassandra_marshal_numeric(stmt, (*col_it).value);
+					// Return is still casted to a long as PDO manipulates long values
+					// However this cast is safe
+                    long value = pdo_cassandra_marshal_numeric<int>(stmt, (*col_it).value);
                     long *p    = (long *) emalloc(sizeof(long));
                     memcpy(p, &value, sizeof(long));
 
@@ -367,7 +372,7 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
                 case PDO_CASSANDRA_TYPE_VARINT:
                 case PDO_CASSANDRA_TYPE_LONG:
                 {
-                    long value = (long) pdo_cassandra_marshal_numeric(stmt, (*col_it).value);
+                    long value = pdo_cassandra_marshal_numeric<long>(stmt, (*col_it).value);
                     long *p    = (long *) emalloc(sizeof(long));
                     memcpy(p, &value, sizeof(long));
 
