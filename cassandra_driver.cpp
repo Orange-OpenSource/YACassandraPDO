@@ -35,7 +35,7 @@ static long pdo_cassandra_handle_execute(pdo_dbh_t *dbh, const char *sql, long s
 static int  pdo_cassandra_handle_set_attribute(pdo_dbh_t *dbh, long attr, zval *val TSRMLS_DC);
 static int  pdo_cassandra_handle_get_attribute(pdo_dbh_t *dbh, long attr, zval *return_value TSRMLS_DC);
 static int  pdo_cassandra_get_error(pdo_dbh_t *dbh, pdo_stmt_t *stmt, zval *info TSRMLS_DC);
-static int pdo_cassandra_set_consistency(pdo_cassandra_db_handle *H, long attr TSRMLS_DC);
+static int pdo_cassandra_set_consistency(pdo_dbh_t *dbh, long attr TSRMLS_DC);
 
 static struct pdo_dbh_methods cassandra_methods = {
     pdo_cassandra_handle_close,
@@ -347,7 +347,7 @@ static int pdo_cassandra_handle_prepare(pdo_dbh_t *dbh, const char *sql, long sq
         long consistency = -1;
         consistency = pdo_attr_lval(driver_options, static_cast <pdo_attribute_type>(PDO_CASSANDRA_ATTR_CONSISTENCYLEVEL), consistency TSRMLS_CC);
         if (consistency != -1) {
-            pdo_cassandra_set_consistency(H, consistency);
+            pdo_cassandra_set_consistency(dbh, consistency);
         }
     }
 
@@ -626,7 +626,7 @@ static int pdo_cassandra_handle_set_attribute(pdo_dbh_t *dbh, long attr, zval *v
         break;
 
         case PDO_CASSANDRA_ATTR_CONSISTENCYLEVEL:
-            pdo_cassandra_set_consistency(H, Z_LVAL_P(val));
+            pdo_cassandra_set_consistency(dbh, Z_LVAL_P(val));
         break;
 
         default:
@@ -638,8 +638,10 @@ static int pdo_cassandra_handle_set_attribute(pdo_dbh_t *dbh, long attr, zval *v
 
 /** {{{ static int pdo_set_consistency(pdo_cassandra_db_handle *H, long consistency TSRMLS_DC)
 */
-static int pdo_cassandra_set_consistency(pdo_cassandra_db_handle *H, long consistency TSRMLS_DC)
+static int pdo_cassandra_set_consistency(pdo_dbh_t *dbh, long consistency TSRMLS_DC)
 {
+    pdo_cassandra_db_handle *H = static_cast <pdo_cassandra_db_handle *>(dbh->driver_data);
+
     switch(consistency) {
         case PDO_CASSANDRA_CONSISTENCYLEVEL_QUORUM:
             H->consistency = ConsistencyLevel::QUORUM;
@@ -674,8 +676,7 @@ static int pdo_cassandra_set_consistency(pdo_cassandra_db_handle *H, long consis
         break;
 
         default:
-            printf("going to set consistency to DEFAULT\n");
-            printf("XXXX HAVE TO RAISE ERROR");
+            pdo_cassandra_error_exception(dbh, PDO_CASSANDRA_GENERAL_ERROR, "%s", "Invalid consistency level value.");
             return 0;
         break;
     }
