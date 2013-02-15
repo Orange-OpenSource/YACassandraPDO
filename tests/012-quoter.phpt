@@ -14,13 +14,12 @@ var_dump ($db->quote ("'''''''''", PDO::PARAM_LOB));
 var_dump ($db->quote ("test " . chr(0) . " value"));
 var_dump ($db->quote ("test \\"));
 
-
 echo "OK";
 ?>
 --EXPECT--
-string(21) "'\'hello\' \'world\''"
-string(28) "'Co\'mpl\'\'ex \"st\'\"ring'"
-string(20) "'\'\'\'\'\'\'\'\'\''"
-string(15) "'test \0 value'"
-string(8) "test \"
+string(21) "'''hello'' ''world'''"
+string(26) "'Co''mpl''''ex "st''"ring'"
+string(20) "''''''''''''''''''''"
+string(7) "'test '"
+string(8) "'test \'"
 OK

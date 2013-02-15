@@ -15,18 +15,18 @@ try {
     $db->exec ("DROP KEYSPACE {$keyspace}_text");
 } catch (Exception $e) {}
 
-$db->exec ("CREATE KEYSPACE {$keyspace}_int with strategy_class = 'SimpleStrategy' and strategy_options:replication_factor=1;");
-$db->exec ("CREATE KEYSPACE {$keyspace}_text with strategy_class = 'SimpleStrategy' and strategy_options:replication_factor=1;");
+$db->exec ("CREATE KEYSPACE {$keyspace}_int WITH REPLICATION = {'CLASS' : 'SimpleStrategy', 'replication_factor': 1}");
+$db->exec ("CREATE KEYSPACE {$keyspace}_text WITH REPLICATION = {'CLASS' : 'SimpleStrategy', 'replication_factor': 1}");
 
 $db->exec ("USE {$keyspace}_int");
-$db->exec ("CREATE TABLE my_cf (my_key text PRIMARY KEY)
-            WITH comparator = bigint AND default_validation = bigint;");
+$db->exec ("CREATE TABLE my_cf (my_key text PRIMARY KEY, my_int1 int, my_int2 int)");
 
-$db->exec ("UPDATE my_cf SET 10 = 100, 20 = 200 WHERE my_key = 'aa'");
+
+$db->exec ("UPDATE my_cf SET my_int1 = 100, my_int2 = 200 WHERE my_key = 'aa'");
 
 $db->exec ("USE {$keyspace}_text");
-$db->exec ("CREATE TABLE my_cf (my_key text PRIMARY KEY)");
-$db->exec ("UPDATE my_cf SET hello = 'world', test = 'column' WHERE my_key = 'aa'");
+$db->exec ("CREATE TABLE my_cf (my_key text PRIMARY KEY, my_msg1 text, my_msg2 text)");
+$db->exec ("UPDATE my_cf SET my_msg1 = 'world', my_msg2 = 'column' WHERE my_key = 'aa'");
 
 $db->exec ("USE {$keyspace}_int");
 $results1 = $db->query ("SELECT * FROM my_cf WHERE my_key = 'aa'");
@@ -46,9 +46,9 @@ array(1) {
   array(3) {
     ["my_key"]=>
     string(2) "aa"
-    [10]=>
+    ["my_int1"]=>
     int(100)
-    [20]=>
+    ["my_int2"]=>
     int(200)
   }
 }
@@ -57,9 +57,9 @@ array(1) {
   array(3) {
     ["my_key"]=>
     string(2) "aa"
-    ["hello"]=>
+    ["my_msg1"]=>
     string(5) "world"
-    ["test"]=>
+    ["my_msg2"]=>
     string(6) "column"
   }
 }
