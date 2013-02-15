@@ -1,3 +1,11 @@
+0.3.0
+- Swittched to Cassandra 19.35 thrift interface
+- Added support to cql3 (via execute_cql3), compatible with Cassandra 1.2
+- fixed support to negative integers
+- fixed unit tests, compatible with cassandra 1.2
+- removed cqlversion from dsn (force it to cql3)
+
+
 0.2.2
 - Switched to Cassandra 1.1.1 thrift interface
 - dbname in dsn sets the keyspace at startup

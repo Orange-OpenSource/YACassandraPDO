@@ -97,7 +97,7 @@ static int pdo_cassandra_stmt_execute(pdo_stmt_t *stmt TSRMLS_DC)
         std::string query(stmt->active_query_string);
 
         S->result.reset(new CqlResult);
-        H->client->execute_cql3_query(*S->result.get(), query, (H->compression ? Compression::GZIP : Compression::NONE), ConsistencyLevel::ONE);
+        H->client->execute_cql3_query(*S->result.get(), query, (H->compression ? Compression::GZIP : Compression::NONE), H->consistency);
         S->has_iterator = 0;
         stmt->row_count = S->result.get()->rows.size();
         pdo_cassandra_set_active_keyspace(H, query TSRMLS_CC);

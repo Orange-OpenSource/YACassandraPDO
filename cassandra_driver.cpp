@@ -35,6 +35,7 @@ static long pdo_cassandra_handle_execute(pdo_dbh_t *dbh, const char *sql, long s
 static int  pdo_cassandra_handle_set_attribute(pdo_dbh_t *dbh, long attr, zval *val TSRMLS_DC);
 static int  pdo_cassandra_handle_get_attribute(pdo_dbh_t *dbh, long attr, zval *return_value TSRMLS_DC);
 static int  pdo_cassandra_get_error(pdo_dbh_t *dbh, pdo_stmt_t *stmt, zval *info TSRMLS_DC);
+static int pdo_cassandra_set_consistency(pdo_cassandra_db_handle *H, long attr TSRMLS_DC);
 
 static struct pdo_dbh_methods cassandra_methods = {
     pdo_cassandra_handle_close,
@@ -140,13 +141,12 @@ static zend_bool parse_dsn(pdo_dbh_t *dbh, pdo_cassandra_db_handle *H, const cha
         char *host = NULL;
         int port = 0;
         char *dbname = NULL;
-        char *cqlversion = NULL;
+        char *cqlversion = "3.0.0";
 
         struct pdo_data_src_parser vars[] = {
             { "host",       "127.0.0.1", 0 },
             { "port",       "9160",      0 },
-            { "dbname",     NULL,        0 },
-            { "cqlversion", NULL,        0 }
+            { "dbname",     NULL,        0 }
         };
 
         php_pdo_parse_data_source(pch, strlen(pch), vars, 4);
@@ -154,7 +154,6 @@ static zend_bool parse_dsn(pdo_dbh_t *dbh, pdo_cassandra_db_handle *H, const cha
         host = vars[0].optval;
         port = atoi(vars[1].optval);
         dbname = vars[2].optval;
-        cqlversion = vars[3].optval;
 
         if ( dbname ) {
             H->active_keyspace = dbname;
@@ -242,6 +241,7 @@ static int pdo_cassandra_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSR
 
     dbh->driver_data   = NULL;
     dbh->methods       = &cassandra_methods;
+    H->consistency = ConsistencyLevel::ONE;
     H->compression     = 0;
     H->einfo.errcode   = 0;
     H->einfo.errmsg    = NULL;
@@ -341,6 +341,14 @@ static int pdo_cassandra_handle_prepare(pdo_dbh_t *dbh, const char *sql, long sq
     stmt->methods               = &cassandra_stmt_methods;
     stmt->supports_placeholders = PDO_PLACEHOLDER_NONE;
 
+    if (driver_options) {
+        long consistency = -1;
+        consistency = pdo_attr_lval(driver_options, static_cast <pdo_attribute_type>(PDO_CASSANDRA_ATTR_CONSISTENCYLEVEL), consistency TSRMLS_CC);
+        if (consistency != -1) {
+            pdo_cassandra_set_consistency(H, consistency);
+        }
+    }
+
     return 1;
 }
 /* }}} */
@@ -428,7 +436,7 @@ static long pdo_cassandra_handle_execute(pdo_dbh_t *dbh, const char *sql, long s
         std::string query(sql);
 
         CqlResult result;
-        H->client->execute_cql3_query(result, query, (H->compression ? Compression::GZIP : Compression::NONE), ConsistencyLevel::ONE);
+        H->client->execute_cql3_query(result, query, (H->compression ? Compression::GZIP : Compression::NONE), H->consistency);
 
         if (result.type == CqlResultType::INT) {
             return result.num;
@@ -615,9 +623,61 @@ static int pdo_cassandra_handle_set_attribute(pdo_dbh_t *dbh, long attr, zval *v
             H->preserve_values = Z_BVAL_P(val);
         break;
 
+        case PDO_CASSANDRA_ATTR_CONSISTENCYLEVEL:
+            pdo_cassandra_set_consistency(H, Z_LVAL_P(val));
+        break;
+
         default:
             return 0;
     }
+    return 1;
+}
+/* }}} */
+
+/** {{{ static int pdo_set_consistency(pdo_cassandra_db_handle *H, long consistency TSRMLS_DC)
+*/
+static int pdo_cassandra_set_consistency(pdo_cassandra_db_handle *H, long consistency TSRMLS_DC)
+{
+    switch(consistency) {
+        case PDO_CASSANDRA_CONSISTENCYLEVEL_QUORUM:
+            H->consistency = ConsistencyLevel::QUORUM;
+        break;
+
+        case PDO_CASSANDRA_CONSISTENCYLEVEL_LOCAL_QUORUM:
+            H->consistency = ConsistencyLevel::LOCAL_QUORUM;
+        break;
+
+        case PDO_CASSANDRA_CONSISTENCYLEVEL_EACH_QUORUM:
+            H->consistency = ConsistencyLevel::EACH_QUORUM;
+        break;
+
+        case PDO_CASSANDRA_CONSISTENCYLEVEL_ALL:
+            H->consistency = ConsistencyLevel::ALL;
+        break;
+
+        case PDO_CASSANDRA_CONSISTENCYLEVEL_ANY:
+            H->consistency = ConsistencyLevel::ANY;
+        break;
+
+        case PDO_CASSANDRA_CONSISTENCYLEVEL_TWO:
+            H->consistency = ConsistencyLevel::TWO;
+        break;
+
+        case PDO_CASSANDRA_CONSISTENCYLEVEL_THREE:
+            H->consistency = ConsistencyLevel::THREE;
+        break;
+
+        case PDO_CASSANDRA_CONSISTENCYLEVEL_ONE:
+            H->consistency = ConsistencyLevel::ONE;
+        break;
+
+        default:
+            printf("going to set consistency to DEFAULT\n");
+            printf("XXXX HAVE TO RAISE ERROR");
+            return 0;
+        break;
+    }
+
     return 1;
 }
 /* }}} */
@@ -677,6 +737,17 @@ PHP_MINIT_FUNCTION(pdo_cassandra)
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_ATTR_COMPRESSION",              PDO_CASSANDRA_ATTR_COMPRESSION);
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_ATTR_THRIFT_DEBUG",             PDO_CASSANDRA_ATTR_THRIFT_DEBUG);
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_ATTR_PRESERVE_VALUES",          PDO_CASSANDRA_ATTR_PRESERVE_VALUES);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_ATTR_CONSISTENCYLEVEL",          PDO_CASSANDRA_ATTR_CONSISTENCYLEVEL);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_CONSISTENCYLEVEL_ONE",          PDO_CASSANDRA_CONSISTENCYLEVEL_ONE);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_CONSISTENCYLEVEL_QUORUM",          PDO_CASSANDRA_CONSISTENCYLEVEL_QUORUM);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_CONSISTENCYLEVEL_LOCAL_QUORUM",          PDO_CASSANDRA_CONSISTENCYLEVEL_LOCAL_QUORUM);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_CONSISTENCYLEVEL_EACH_QUORUM",          PDO_CASSANDRA_CONSISTENCYLEVEL_EACH_QUORUM);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_CONSISTENCYLEVEL_ALL",          PDO_CASSANDRA_CONSISTENCYLEVEL_ALL);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_CONSISTENCYLEVEL_ANY",          PDO_CASSANDRA_CONSISTENCYLEVEL_ANY);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_CONSISTENCYLEVEL_TWO",          PDO_CASSANDRA_CONSISTENCYLEVEL_TWO);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_CONSISTENCYLEVEL_THREE",          PDO_CASSANDRA_CONSISTENCYLEVEL_THREE);
+
+
 
 #undef PHP_PDO_CASSANDRA_REGISTER_CONST_LONG
 
