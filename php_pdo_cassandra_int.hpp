@@ -17,6 +17,10 @@
 #ifndef _PHP_PDO_CASSANDRA_PRIVATE_H_
 # define _PHP_PDO_CASSANDRA_PRIVATE_H_
 
+#ifndef CASSANDRA_CQL_VERSION
+#define CASSANDRA_CQL_VERSION "3.0.0"
+#endif
+
 extern "C" {
 /* Need to undefine these so that thrift config doesn't complain */
 #ifdef HAVE_CONFIG_H
