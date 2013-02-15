@@ -26,7 +26,8 @@ function pdo_cassandra_init ($db, $keyspace = null)
         $db->exec ("CREATE COLUMNFAMILY users (
                       my_key varchar PRIMARY KEY,
                       full_name varchar,
-		      field_ascii ascii);");
+		      field_ascii ascii,
+		      field_utf8 text);");
 
         $stmt = $db->prepare ("INSERT INTO users (my_key, full_name) VALUES (:key, :full_name);");
         $stmt->execute (array (':key' => 'mikko', ':full_name' => 'Mikko K' ));
