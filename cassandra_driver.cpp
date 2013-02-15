@@ -141,31 +141,33 @@ static zend_bool parse_dsn(pdo_dbh_t *dbh, pdo_cassandra_db_handle *H, const cha
         char *host = NULL;
         int port = 0;
         char *dbname = NULL;
-        char *cqlversion = "3.0.0";
+        char *cqlversion = NULL;
 
         struct pdo_data_src_parser vars[] = {
             { "host",       "127.0.0.1", 0 },
             { "port",       "9160",      0 },
-            { "dbname",     NULL,        0 }
+            { "dbname",     NULL,        0 },
+            { "cqlversion", NULL,        0 }
         };
 
-        php_pdo_parse_data_source(pch, strlen(pch), vars, 3);
+        php_pdo_parse_data_source(pch, strlen(pch), vars, 4);
 
         host = vars[0].optval;
         port = atoi(vars[1].optval);
         dbname = vars[2].optval;
+        cqlversion = vars[3].optval;
 
         if ( dbname ) {
             H->active_keyspace = dbname;
         }
-        if ( cqlversion ) {
-            H->cql_version = cqlversion ;
+
+        if ( cqlversion && strcmp(cqlversion, CASSANDRA_CQL_VERSION) != 0) {
+            // only support cql3
+            pdo_cassandra_error_exception(dbh, PDO_CASSANDRA_INVALID_CONNECTION_STRING, "%s", "Invalid cql version. Only cql 3.0.0 is supported");
+            return 0;
         }
+        H->cql_version = CASSANDRA_CQL_VERSION;
 
-
-#if 0
-        std::cerr << "Adding host=[" << host << "] port=[" << port << "]" << std::endl;
-#endif
         try {
             H->socket->addServer (host, port);
         } catch (std::exception &re) {
@@ -241,7 +243,7 @@ static int pdo_cassandra_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSR
 
     dbh->driver_data   = NULL;
     dbh->methods       = &cassandra_methods;
-    H->consistency = ConsistencyLevel::ONE;
+    H->consistency     = ConsistencyLevel::ONE;
     H->compression     = 0;
     H->einfo.errcode   = 0;
     H->einfo.errmsg    = NULL;
