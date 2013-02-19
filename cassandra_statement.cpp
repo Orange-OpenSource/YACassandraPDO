@@ -263,7 +263,7 @@ static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &ty
 
 /** {{{ static long pdo_cassandra_marshal_numeric(const std::string &binary)
  ** Reads some integer value from a raw stream
- ** Receiver size has to be the same as the binary size to prevent error on negative values
+ ** Receiver size has to be the same as the binary size to prevent from errors on negative values
  */
 template <class T>
 T pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &binary)
