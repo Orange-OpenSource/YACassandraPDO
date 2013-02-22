@@ -269,9 +269,12 @@ template <class T>
 T pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &binary)
 {
     if (sizeof(T) != binary.size()) {
+		// Binary is null
+		if (!binary.size())
+			return T();
         pdo_cassandra_error(stmt->dbh, PDO_CASSANDRA_INTEGER_CONVERSION_ERROR,
 							"pdo_cassandra_marshal_numeric: Binary stream and receiver size doesn't match", "");
-        return 0;
+        return T();
     }
 
     const unsigned char *bytes = reinterpret_cast <const unsigned char *>(binary.c_str());
