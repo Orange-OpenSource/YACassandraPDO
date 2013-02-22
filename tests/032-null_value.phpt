@@ -36,4 +36,28 @@ $stmt->execute();
 var_dump($stmt->fetchAll());
 
 --EXPECT--
-
+array(1) {
+  [0]=>
+  array(10) {
+    ["my_key"]=>
+    int(21)
+    [0]=>
+    int(21)
+    ["my_ascii"]=>
+    string(0) ""
+    [1]=>
+    string(0) ""
+    ["my_int"]=>
+    int(42)
+    [2]=>
+    int(42)
+    ["my_int2"]=>
+    int(0)
+    [3]=>
+    int(0)
+    ["my_ts"]=>
+    int(0)
+    [4]=>
+    int(0)
+  }
+}
