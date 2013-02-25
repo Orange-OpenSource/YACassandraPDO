@@ -293,17 +293,19 @@ std::string pdo_cassandra_marshal_float(pdo_stmt_t *stmt,
 							"pdo_cassandra_marshal_numeric: Binary stream and receiver size doesn't match", "");
         return "0.0";
     }
-
 	const unsigned char *bytes = reinterpret_cast < const unsigned char *>(binary.c_str());
     T val = 0;
-    unsigned int *pval = reinterpret_cast<unsigned int *>(&val);
+    unsigned char *pval = reinterpret_cast<unsigned char *>(&val) + sizeof(val);
 	size_t siz = binary.size ();
-    for (size_t i = 0; i < siz; i++)
-		*pval = *pval << 8 | bytes[i];
+    for (size_t i = 0; i < siz; i++) {
+		--pval;
+		*pval = bytes[i];
+	}
 	std::stringstream ss;
     ss << val;
 	return ss.str();
 }
+
 
 /** {{{ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 */
