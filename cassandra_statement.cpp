@@ -274,9 +274,12 @@ T pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &binary)
 
     const unsigned char *bytes = reinterpret_cast <const unsigned char *>(binary.c_str());
     T val = 0;
-    size_t siz = binary.size ();
-    for (size_t i = 0; i < siz; i++)
-        val = val << 8 | bytes[i];
+    unsigned char *pval = reinterpret_cast<unsigned char *>(&val) + sizeof(val);
+	size_t siz = binary.size ();
+    for (size_t i = 0; i < siz; i++) {
+		--pval;
+		*pval = bytes[i];
+	}
     return val;
 }
 /* }}} */
