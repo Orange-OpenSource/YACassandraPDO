@@ -64,9 +64,10 @@ dump_value($db, 26);
 
 // Double insertions
 insert_in_base($db, 26, "4.395181234567E+73", 1);
+insert_in_base($db, 27, "-4.395181234567E+73", 1);
 
 dump_value($db, 26, 1);
-
+dump_value($db, 27, 1);
 
 --EXPECT--
 string(5) "42.42"
@@ -75,3 +76,5 @@ string(5) "-4242"
 string(4) "4242"
 string(12) "-4.39518e+07"
 string(11) "4.39518e+07"
+string(11) "4.39518e+73"
+string(12) "-4.39518e+73"
