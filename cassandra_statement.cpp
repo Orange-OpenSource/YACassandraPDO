@@ -225,10 +225,29 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
     if (!real_type.compare("BooleanType")) {
         return PDO_PARAM_BOOL;
     }
+	if (!real_type.compare(0, sizeof("SetType") - 1, "SetType")
+		|| !real_type.compare(0, sizeof("MapType") - 1, "MapType")) {
+        return PDO_PARAM_ZVAL;
+    }
+
 	// Float and doubles do not exist in PDO
     return PDO_PARAM_STR;
 }
 /* }}} */
+
+static pdo_cassandra_type pdo_cassandra_get_element_type_in_collection(const std::string &type)
+{
+   std::string real_type;
+
+    if (type.find("org.apache.cassandra.db.marshal.") != std::string::npos)
+        real_type = type.substr(::strlen("org.apache.cassandra.db.marshal."));
+	else
+        real_type = type;
+	if (!real_type.compare(0, 7, "SetType")) {
+		real_type = real_type.substr(sizeof("SetType"), real_type.size() - sizeof("SetType") - 1);
+	}
+	return pdo_cassandra_get_cassandra_type(real_type);
+}
 
 /** {{{ pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &type)
 */
@@ -267,6 +286,20 @@ static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &ty
  ** Reads some integer value from a raw stream
  ** Receiver size has to be the same as the binary size to prevent from errors on negative values
  */
+
+template <class T>
+T stream_extractor(const unsigned char *bytes)
+{
+    T val = T();
+    unsigned char *pval = reinterpret_cast<unsigned char *>(&val) + sizeof(val);
+    for (size_t i = 0; i < sizeof(T); i++) {
+		--pval;
+		*pval = bytes[i];
+	}
+    return val;
+
+}
+
 template <class T>
 T pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &binary)
 {
@@ -278,16 +311,7 @@ T pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &binary)
 							"pdo_cassandra_marshal_numeric: Binary stream and receiver size doesn't match", "");
         return T();
     }
-
-    const unsigned char *bytes = reinterpret_cast <const unsigned char *>(binary.c_str());
-    T val = T();
-    unsigned char *pval = reinterpret_cast<unsigned char *>(&val) + sizeof(val);
-	size_t siz = binary.size ();
-    for (size_t i = 0; i < siz; i++) {
-		--pval;
-		*pval = bytes[i];
-	}
-    return val;
+	return stream_extractor<T>(reinterpret_cast <const unsigned char *>(binary.c_str()));
 }
 /* }}} */
 
@@ -342,6 +366,43 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
     return 1;
 }
 /* }}} */
+
+
+void parse_collection(pdo_cassandra_type col_type, const std::string &type, const std::string &data) {
+	std::cout << "** Data type to analyse: " << type << "\t data size: " << data.size() << std::endl;
+
+	// Extract Collection and data type
+	pdo_cassandra_type elt_type = pdo_cassandra_get_element_type_in_collection(type);
+	unsigned short nbElements = stream_extractor<unsigned short>(reinterpret_cast <const unsigned char *>(data.c_str()));
+
+	std::cout << "** Nb Elements in the collection: " << nbElements << std::endl;
+	// Iterating trough the collection
+	const unsigned char *datap = reinterpret_cast<const unsigned char *>(data.c_str() + 2);
+	while (nbElements--)
+		{
+			unsigned short elem_size = stream_extractor<unsigned short>(datap);
+			std::cout << "Element size: " << elem_size << std::endl;
+			datap += 2;
+			switch (elt_type)
+				{
+                case PDO_CASSANDRA_TYPE_INTEGER:
+					{
+						int value = stream_extractor<int>(datap);
+						std::cout << "Value: " << value << std::endl;
+					}
+					break;
+				default:
+					// We consider this is a string for now :)
+					char *str = new char[elem_size + 1];
+					memcpy(str, datap, elem_size);
+					str[elem_size] = 0;
+					std::cout << "STR Value: " << str << std::endl;
+
+					break;
+				}
+			datap += elem_size;
+		}
+}
 
 /** {{{ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr, unsigned long *len, int *caller_frees TSRMLS_DC)
 */
@@ -422,11 +483,15 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
 					}
 					break;
 				case PDO_CASSANDRA_TYPE_SET:
+				case PDO_CASSANDRA_TYPE_MAP:
+				case PDO_CASSANDRA_TYPE_LIST:
 					{
-						std::cout << "get Column::Set type found:" << S->result.get ()->schema.value_types [current_column] << std::endl;
-
+						// The return value of the parse collection must be the zval stuff
+						parse_collection(lparam_type, S->result.get ()->schema.value_types [current_column], (*col_it).value);
+						// Register what has to be registered here
 					}
-
+					// TODO break once the zval is properly set
+					// break;
                 default:
                     *ptr          = const_cast <char *> ((*col_it).value.c_str());
                     *len          = (*col_it).value.size();
