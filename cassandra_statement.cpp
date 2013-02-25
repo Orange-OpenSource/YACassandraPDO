@@ -16,7 +16,7 @@
 
 #include "php_pdo_cassandra.hpp"
 #include "php_pdo_cassandra_int.hpp"
-
+#include <sstream>
 static pdo_param_type pdo_cassandra_get_type(const std::string &type);
 template <class T>
 T pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &binary);
@@ -224,6 +224,7 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
     if (!real_type.compare("BooleanType")) {
         return PDO_PARAM_BOOL;
     }
+	// Float and doubles do not exist in PDO
     return PDO_PARAM_STR;
 }
 /* }}} */
@@ -233,30 +234,24 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
 static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &type)
 {
     std::string real_type;
-
-    if (type.find("org.apache.cassandra.db.marshal.") != std::string::npos) {
+    if (type.find("org.apache.cassandra.db.marshal.") != std::string::npos)
         real_type = type.substr(::strlen("org.apache.cassandra.db.marshal."));
-    } else {
+	else
         real_type = type;
-    }
 
-    if (!real_type.compare("IntegerType")) {
+    if (!real_type.compare("IntegerType"))
         return PDO_CASSANDRA_TYPE_VARINT;
-    }
-
-    if (!real_type.compare("Int32Type")) {
+    if (!real_type.compare("Int32Type"))
         return PDO_CASSANDRA_TYPE_INTEGER;
-    }
-
     if (!real_type.compare("LongType") ||
-        !real_type.compare("DateType")) {
+        !real_type.compare("DateType"))
         return PDO_CASSANDRA_TYPE_LONG;
-    }
-
-    if (!real_type.compare("BooleanType")) {
+    if (!real_type.compare("BooleanType"))
         return PDO_CASSANDRA_TYPE_BOOLEAN;
-    }
-
+    if (!real_type.compare("FloatType"))
+        return PDO_CASSANDRA_TYPE_FLOAT;
+    if (!real_type.compare("DoubleType"))
+        return PDO_CASSANDRA_TYPE_DOUBLE;
     return PDO_CASSANDRA_TYPE_UTF8;
 }
 /* }}} */
@@ -285,6 +280,30 @@ T pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &binary)
     return val;
 }
 /* }}} */
+
+template <class T>
+std::string pdo_cassandra_marshal_float(pdo_stmt_t *stmt,
+										const std::string &binary) {
+	if (sizeof(T) != binary.size()) {
+		// Binary is null
+		if (!binary.size())
+			return "0,0";
+		// TODO change error conversion
+        pdo_cassandra_error(stmt->dbh, PDO_CASSANDRA_INTEGER_CONVERSION_ERROR,
+							"pdo_cassandra_marshal_numeric: Binary stream and receiver size doesn't match", "");
+        return "0.0";
+    }
+
+	const unsigned char *bytes = reinterpret_cast < const unsigned char *>(binary.c_str());
+    T val = 0;
+    unsigned int *pval = reinterpret_cast<unsigned int *>(&val);
+	size_t siz = binary.size ();
+    for (size_t i = 0; i < siz; i++)
+		*pval = *pval << 8 | bytes[i];
+	std::stringstream ss;
+    ss << val;
+	return ss.str();
+}
 
 /** {{{ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 */
@@ -384,6 +403,29 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
                     *caller_frees = 1;
                 }
                 break;
+                case PDO_CASSANDRA_TYPE_FLOAT:
+                {
+					std::string value = pdo_cassandra_marshal_float<float>(stmt, (*col_it).value);
+					unsigned int size = sizeof(char) * value.size();
+					char *pvalue = (char *)emalloc(size);
+					memcpy(pvalue, value.c_str(), size);
+					*ptr          = pvalue;
+                    *len          = size;
+                    *caller_frees = 1;
+                }
+                break;
+                case PDO_CASSANDRA_TYPE_DOUBLE:
+                {
+					std::string value = pdo_cassandra_marshal_float<double>(stmt, (*col_it).value);
+					unsigned int size = sizeof(char) * value.size();
+					char *pvalue = (char *)emalloc(size);
+					memcpy(pvalue, value.c_str(), size);
+					*ptr          = pvalue;
+                    *len          = size;
+                    *caller_frees = 1;
+                }
+                break;
+
 
                 default:
                     *ptr          = const_cast <char *> ((*col_it).value.c_str());
