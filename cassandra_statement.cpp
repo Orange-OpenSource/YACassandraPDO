@@ -273,7 +273,7 @@ T pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &binary)
     }
 
     const unsigned char *bytes = reinterpret_cast <const unsigned char *>(binary.c_str());
-    T val = 0;
+    T val = T();
     unsigned char *pval = reinterpret_cast<unsigned char *>(&val) + sizeof(val);
 	size_t siz = binary.size ();
     for (size_t i = 0; i < siz; i++) {
@@ -285,25 +285,9 @@ T pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &binary)
 /* }}} */
 
 template <class T>
-std::string pdo_cassandra_marshal_float(pdo_stmt_t *stmt,
+std::string pdo_cassandra_marshal_numeric_str_ret(pdo_stmt_t *stmt,
 										const std::string &binary) {
-	if (sizeof(T) != binary.size()) {
-		// Binary is null
-		if (!binary.size())
-			return "0,0";
-		// TODO change error conversion
-        pdo_cassandra_error(stmt->dbh, PDO_CASSANDRA_INTEGER_CONVERSION_ERROR,
-							"pdo_cassandra_marshal_numeric: Binary stream and receiver size doesn't match", "");
-        return "0.0";
-    }
-	const unsigned char *bytes = reinterpret_cast < const unsigned char *>(binary.c_str());
-    T val = 0;
-    unsigned char *pval = reinterpret_cast<unsigned char *>(&val) + sizeof(val);
-	size_t siz = binary.size ();
-    for (size_t i = 0; i < siz; i++) {
-		--pval;
-		*pval = bytes[i];
-	}
+	T val = pdo_cassandra_marshal_numeric<T>(stmt, binary);
 	std::stringstream ss;
     ss << val;
 	return ss.str();
@@ -410,7 +394,7 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
                 break;
                 case PDO_CASSANDRA_TYPE_FLOAT:
                 {
-					std::string value = pdo_cassandra_marshal_float<float>(stmt, (*col_it).value);
+					std::string value = pdo_cassandra_marshal_numeric_str_ret<float>(stmt, (*col_it).value);
 					unsigned int size = sizeof(char) * value.size();
 					char *pvalue = (char *)emalloc(size);
 					memcpy(pvalue, value.c_str(), size);
@@ -421,7 +405,7 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
                 break;
                 case PDO_CASSANDRA_TYPE_DOUBLE:
                 {
-					std::string value = pdo_cassandra_marshal_float<double>(stmt, (*col_it).value);
+					std::string value = pdo_cassandra_marshal_numeric_str_ret<double>(stmt, (*col_it).value);
 					unsigned int size = sizeof(char) * value.size();
 					char *pvalue = (char *)emalloc(size);
 					memcpy(pvalue, value.c_str(), size);
