@@ -214,6 +214,7 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
     } else {
         real_type = type;
     }
+	std::cout << "REAL TYPE: " << type << std::endl;
     if (!real_type.compare("IntegerType") ||
         !real_type.compare("Int32Type") ||
         !real_type.compare("LongType") ||
@@ -234,11 +235,14 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
 static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &type)
 {
     std::string real_type;
+
+
     if (type.find("org.apache.cassandra.db.marshal.") != std::string::npos)
         real_type = type.substr(::strlen("org.apache.cassandra.db.marshal."));
 	else
         real_type = type;
 
+	std::cout << "Cassandra TYPE: " << real_type << std::endl;
     if (!real_type.compare("IntegerType"))
         return PDO_CASSANDRA_TYPE_VARINT;
     if (!real_type.compare("Int32Type"))
@@ -252,6 +256,9 @@ static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &ty
         return PDO_CASSANDRA_TYPE_FLOAT;
     if (!real_type.compare("DoubleType"))
         return PDO_CASSANDRA_TYPE_DOUBLE;
+    if (!real_type.compare(0, 7, "SetType"))
+		return PDO_CASSANDRA_TYPE_SET;
+
     return PDO_CASSANDRA_TYPE_UTF8;
 }
 /* }}} */
@@ -365,63 +372,67 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
         	    lparam_type = pdo_cassandra_get_cassandra_type(S->result.get ()->schema.value_types [current_column]);
             }
     	    switch (lparam_type)
-            {
+				{
                 case PDO_CASSANDRA_TYPE_INTEGER:
-                {
-					// Return is still casted to a long as PDO manipulates long values
-					// However this cast is safe
-                    long value = pdo_cassandra_marshal_numeric<int>(stmt, (*col_it).value);
-                    long *p    = (long *) emalloc(sizeof(long));
-                    memcpy(p, &value, sizeof(long));
+					{
+						// Return is still casted to a long as PDO manipulates long values
+						// However this cast is safe
+						long value = pdo_cassandra_marshal_numeric<int>(stmt, (*col_it).value);
+						long *p    = (long *) emalloc(sizeof(long));
+						memcpy(p, &value, sizeof(long));
 
-                    *ptr          = (char *)p;
-                    *len          = sizeof(long);
-                    *caller_frees = 1;
-                }
-                break;
+						*ptr          = (char *)p;
+						*len          = sizeof(long);
+						*caller_frees = 1;
+					}
+					break;
 
                 case PDO_CASSANDRA_TYPE_VARINT:
                 case PDO_CASSANDRA_TYPE_LONG:
-                {
-                    long value = pdo_cassandra_marshal_numeric<long>(stmt, (*col_it).value);
-                    long *p    = (long *) emalloc(sizeof(long));
-                    memcpy(p, &value, sizeof(long));
+					{
+						long value = pdo_cassandra_marshal_numeric<long>(stmt, (*col_it).value);
+						long *p    = (long *) emalloc(sizeof(long));
+						memcpy(p, &value, sizeof(long));
 
-                    *ptr          = (char *)p;
-                    *len          = sizeof(long);
-                    *caller_frees = 1;
-                }
-                break;
+						*ptr          = (char *)p;
+						*len          = sizeof(long);
+						*caller_frees = 1;
+					}
+					break;
                 case PDO_CASSANDRA_TYPE_FLOAT:
-                {
-					std::string value = pdo_cassandra_marshal_numeric_str_ret<float>(stmt, (*col_it).value);
-					unsigned int size = sizeof(char) * value.size();
-					char *pvalue = (char *)emalloc(size);
-					memcpy(pvalue, value.c_str(), size);
-					*ptr          = pvalue;
-                    *len          = size;
-                    *caller_frees = 1;
-                }
-                break;
+					{
+						std::string value = pdo_cassandra_marshal_numeric_str_ret<float>(stmt, (*col_it).value);
+						unsigned int size = sizeof(char) * value.size();
+						char *pvalue = (char *)emalloc(size);
+						memcpy(pvalue, value.c_str(), size);
+						*ptr          = pvalue;
+						*len          = size;
+						*caller_frees = 1;
+					}
+					break;
                 case PDO_CASSANDRA_TYPE_DOUBLE:
-                {
-					std::string value = pdo_cassandra_marshal_numeric_str_ret<double>(stmt, (*col_it).value);
-					unsigned int size = sizeof(char) * value.size();
-					char *pvalue = (char *)emalloc(size);
-					memcpy(pvalue, value.c_str(), size);
-					*ptr          = pvalue;
-                    *len          = size;
-                    *caller_frees = 1;
-                }
-                break;
+					{
+						std::string value = pdo_cassandra_marshal_numeric_str_ret<double>(stmt, (*col_it).value);
+						unsigned int size = sizeof(char) * value.size();
+						char *pvalue = (char *)emalloc(size);
+						memcpy(pvalue, value.c_str(), size);
+						*ptr          = pvalue;
+						*len          = size;
+						*caller_frees = 1;
+					}
+					break;
+				case PDO_CASSANDRA_TYPE_SET:
+					{
+						std::cout << "get Column::Set type found:" << S->result.get ()->schema.value_types [current_column] << std::endl;
 
+					}
 
                 default:
                     *ptr          = const_cast <char *> ((*col_it).value.c_str());
                     *len          = (*col_it).value.size();
                     *caller_frees = 0;
-                break;
-            }
+					break;
+				}
             return 1;
         }
     }
