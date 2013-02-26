@@ -313,7 +313,7 @@ namespace StreamExtraction {
 		zval *ret;
 		MAKE_STD_ZVAL(ret);
 		Z_TYPE_P(ret) = IS_STRING;
-		char *str = new char[size + 1];
+		char *str = (char *) emalloc(sizeof(*str) * (size + 1));
 		memcpy(str, binary, size);
 		str[size] = 0;
 		Z_STRVAL_P(ret) = str;
