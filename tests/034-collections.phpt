@@ -78,3 +78,15 @@ stdClass Object
         )
 
 )
+stdClass Object
+(
+    [set_test_int] => Array
+        (
+            [0] => 21
+            [1] => 42
+            [2] => 45
+            [3] => 84
+            [4] => 456
+        )
+
+)
