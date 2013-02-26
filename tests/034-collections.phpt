@@ -38,12 +38,6 @@ $db->exec ("CREATE COLUMNFAMILY cf (my_key int PRIMARY KEY,
 
 
 
-/* echo "INSERTING 3 elements" . PHP_EOL; */
-/* $db->exec("INSERT INTO cf (my_key, set_test_int) */
-/* 		VALUES (3, {21, 42, 84, 45, 456});"); */
-/* // Display cf content */
-/* print_r($db->query('SELECT set_test_int FROM cf WHERE my_key=3;')->fetchObject()); */
-
 /* echo "INSERTING 1 string elems (size 2)" . PHP_EOL; */
 /* $db->exec("INSERT INTO cf (my_key, set_test_vc) */
 /* 		VALUES (4, {'he'});"); */
@@ -58,26 +52,31 @@ $db->exec ("CREATE COLUMNFAMILY cf (my_key int PRIMARY KEY,
 /* print_r($db->query('SELECT set_test_vc FROM cf WHERE my_key=4;')->fetchObject()); */
 
 
+
+
+// Map varchar int test
+$db->exec("INSERT INTO cf (my_key, map_test_vc_int)
+		VALUES (400, {'key1': 1, 'key2': 2, 'key3': 3});");
+print_r($db->query('SELECT map_test_vc_int FROM cf WHERE my_key=400;')->fetchObject());
+
+
+// Map int float test
+$db->exec("INSERT INTO cf (my_key, map_test_int_float)
+		VALUES (400, {12: 24.24, 15: 30.30, 32: 64.64});");
+print_r($db->query('SELECT map_test_int_float FROM cf WHERE my_key=400;')->fetchObject());
+
+
 /* echo "INSERTING 3 string elems (size 2 and 5 and 8)" . PHP_EOL; */
-/* $db->exec("INSERT INTO cf (my_key, map_test_vc) */
+/* $db->exec("INSERT INTO cf (my_key, set_test_vc) */
 /* 		VALUES (4, {'key1', 'llowo', 'madafuck'});"); */
 /* // Display cf content */
 /* print_r($db->query('SELECT set_test_vc FROM cf WHERE my_key=4;')->fetchObject()); */
 
 
-echo "INSERTING 3 string elems MAP (size 2 and 5 and 8)" . PHP_EOL;
-$db->exec("INSERT INTO cf (my_key, map_test_vc_int)
-		VALUES (400, {'key1': 1, 'key2': 2, 'key3': 3});");
+/* $db->exec("INSERT INTO cf (my_key, set_test_int) */
+/* 		VALUES (123, {21, 42, 84, 45, 456});"); */
 // Display cf content
-//print_r($db->query('SELECT map_test_vc_int FROM cf WHERE my_key=400;')->fetchObject());
-$content = $db->query('SELECT map_test_vc_int FROM cf WHERE my_key=400;')->fetchObject();
-var_dump($content);
+//print_r($db->query('SELECT set_test_int FROM cf WHERE my_key=123;')->fetchObject());
 
-// Insertion test
-/* $db->exec("INSERT INTO cf (my_key, set_test_vc) */
-/* 		VALUES (1, {'key1', 'key2', 'key3'});"); */
-
-/* // Display cf content */
-/* print_r($db->query('SELECT set_test_vc FROM cf;')->fetchObject()); */
 
 --EXPECT--

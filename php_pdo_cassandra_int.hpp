@@ -79,7 +79,7 @@ enum pdo_cassandra_type {
     PDO_CASSANDRA_TYPE_SET,
     PDO_CASSANDRA_TYPE_MAP,
     PDO_CASSANDRA_TYPE_LIST,
-    PDO_CASSANDRA_TYPE_UNKNOWN
+    PDO_CASSANDRA_TYPE_UNKNOWN // Has to be in last position, do not change that
 };
 
 /** {{{
