@@ -214,6 +214,7 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
     } else {
         real_type = type;
     }
+
     if (!real_type.compare("IntegerType") ||
         !real_type.compare("Int32Type") ||
         !real_type.compare("LongType") ||
@@ -224,13 +225,17 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
     if (!real_type.compare("BooleanType")) {
         return PDO_PARAM_BOOL;
     }
+	// Float and doubles do not exist in PDO, they are treated using zval
+	if (!real_type.compare("FloatType") ||
+		!real_type.compare("DoubleType"))
+		return PDO_PARAM_ZVAL;
+	// Collection case
 	if (!real_type.compare(0, sizeof("SetType") - 1, "SetType")
 		|| !real_type.compare(0, sizeof("MapType") - 1, "MapType")
         || !real_type.compare(0, sizeof("ListType") - 1, "ListType")) {
+
         return PDO_PARAM_ZVAL;
     }
-
-	// Float and doubles do not exist in PDO
     return PDO_PARAM_STR;
 }
 /* }}} */
@@ -396,15 +401,6 @@ T pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &binary)
         return T();
     }
 	return StreamExtraction::extract<T>(reinterpret_cast <const unsigned char *>(binary.c_str()));
-}
-
-template <class T>
-std::string pdo_cassandra_marshal_numeric_str_ret(pdo_stmt_t *stmt,
-										const std::string &binary) {
-	T val = pdo_cassandra_marshal_numeric<T>(stmt, binary);
-	std::stringstream ss;
-    ss << val;
-	return ss.str();
 }
 
 
@@ -576,29 +572,18 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
 						*caller_frees = 1;
 					}
 					break;
+
                 case PDO_CASSANDRA_TYPE_FLOAT:
-					{
-						std::string value = pdo_cassandra_marshal_numeric_str_ret<float>(stmt, (*col_it).value);
-						unsigned int size = sizeof(char) * value.size();
-						char *pvalue = (char *)emalloc(size);
-						memcpy(pvalue, value.c_str(), size);
-						*ptr          = pvalue;
-						*len          = size;
-						*caller_frees = 1;
-					}
-					break;
                 case PDO_CASSANDRA_TYPE_DOUBLE:
 					{
-						std::string value = pdo_cassandra_marshal_numeric_str_ret<double>(stmt, (*col_it).value);
-						unsigned int size = sizeof(char) * value.size();
-						char *pvalue = (char *)emalloc(size);
-						memcpy(pvalue, value.c_str(), size);
-						*ptr          = pvalue;
-						*len          = size;
-						*caller_frees = 1;
+						zval **ref = (zval **) emalloc(sizeof(*ref));
+						*ref = StreamExtraction::extract_zval(reinterpret_cast<const unsigned char*>((*col_it).value.c_str()),
+															  lparam_type, (*col_it).value.size());
+						*ptr = (char *)ref;
+                        *len = sizeof(zval); //FIXME NOT SURE
+                        *caller_frees = 1;
 					}
 					break;
-
 
 				case PDO_CASSANDRA_TYPE_LIST:
                 case PDO_CASSANDRA_TYPE_SET:
@@ -607,7 +592,7 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
                         zval **ref = (zval **) emalloc(sizeof(zval));
                         *ref = parse_collection(S->result.get ()->schema.value_types [current_column], (*col_it).value);
                         *ptr = (char *)ref;
-                        *len = sizeof(zval);
+                        *len = sizeof(zval); //FIXME NOT SURE
                         *caller_frees = 1;
 					}
                     break;
@@ -618,7 +603,7 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
                         zval **ref = (zval **) emalloc(sizeof(*ref));
 						*ref = parse_collection_map(S->result.get ()->schema.value_types [current_column], (*col_it).value);
                         *ptr = (char *)ref;
-                        *len = sizeof(zval);
+                        *len = sizeof(zval); //FIXME NOT SURE
                         *caller_frees = 1;
 					}
                     break;

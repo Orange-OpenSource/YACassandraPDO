@@ -70,11 +70,11 @@ dump_value($db, 26, 1);
 dump_value($db, 27, 1);
 
 --EXPECT--
-string(5) "42.42"
-string(6) "-42.42"
-string(5) "-4242"
-string(4) "4242"
-string(12) "-4.39518e+07"
-string(11) "4.39518e+07"
-string(11) "4.39518e+73"
-string(12) "-4.39518e+73"
+float(42.419998168945)
+float(-42.419998168945)
+float(-4242)
+float(4242)
+float(-43951800)
+float(43951800)
+float(4.395181234567E+73)
+float(-4.395181234567E+73)
