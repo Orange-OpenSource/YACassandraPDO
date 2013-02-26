@@ -69,9 +69,9 @@ echo "INSERTING 3 string elems MAP (size 2 and 5 and 8)" . PHP_EOL;
 $db->exec("INSERT INTO cf (my_key, map_test_vc_int)
 		VALUES (400, {'key1': 1, 'key2': 2, 'key3': 3});");
 // Display cf content
-print_r($db->query('SELECT map_test_vc_int FROM cf WHERE my_key=400;')->fetchObject());
-
-
+//print_r($db->query('SELECT map_test_vc_int FROM cf WHERE my_key=400;')->fetchObject());
+$content = $db->query('SELECT map_test_vc_int FROM cf WHERE my_key=400;')->fetchObject();
+var_dump($content);
 
 // Insertion test
 /* $db->exec("INSERT INTO cf (my_key, set_test_vc) */

@@ -226,7 +226,8 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
         return PDO_PARAM_BOOL;
     }
 	if (!real_type.compare(0, sizeof("SetType") - 1, "SetType")
-		|| !real_type.compare(0, sizeof("MapType") - 1, "MapType")) {
+		|| !real_type.compare(0, sizeof("MapType") - 1, "MapType")
+        || !real_type.compare(0, sizeof("ListType") - 1, "ListType")) {
         return PDO_PARAM_ZVAL;
     }
 
@@ -235,22 +236,20 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
 }
 /* }}} */
 
-static std::vector<pdo_cassandra_type> pdo_cassandra_get_element_type_in_collection(const std::string &type)
+static std::vector<pdo_cassandra_type> pdo_cassandra_get_element_type_in_collection(pdo_cassandra_type col_type, const std::string &type)
 {
-   // std::string real_type;
-
-   //  if (type.find("org.apache.cassandra.db.marshal.") != std::string::npos)
-   //      real_type = type.substr(::strlen("org.apache.cassandra.db.marshal."));
-   // 	else
-   //      real_type = type;
-   // 	if (!real_type.compare(0, 7, "SetType")) {
-   // 		real_type = real_type.substr(sizeof("SetType"), real_type.size() - sizeof("SetType") - 1);
-   // 	}
-
-	// Couper entre les parentheses
-	// Splitter sur la virgule
-	// Iterer sur les chaines pour recuperer les types
-	return pdo_cassandra_get_cassandra_type(real_type);
+	std::vector<pdo_cassandra_type> ret;
+	std::string real_type;
+	int st = type.find('(') + 1;
+	std::string rtype = type.substr(st, type.size() - st - 1);
+	if (col_type == PDO_CASSANDRA_TYPE_MAP) {
+		st = rtype.find(',');
+		ret.push_back(pdo_cassandra_get_cassandra_type(rtype.substr(0, st)));
+		ret.push_back(pdo_cassandra_get_cassandra_type(rtype.substr(st + 1)));
+	}
+	else
+		ret.push_back(pdo_cassandra_get_cassandra_type(rtype));
+	return ret;
 }
 
 /** {{{ pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &type)
@@ -283,9 +282,8 @@ static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &ty
 		return PDO_CASSANDRA_TYPE_SET;
     if (!real_type.compare(0, 7, "MapType"))
 		return PDO_CASSANDRA_TYPE_MAP;
-    if (!real_type.compare(0, 7, "ListType"))
+    if (!real_type.compare(0, 8, "ListType"))
 		return PDO_CASSANDRA_TYPE_LIST;
-
     return PDO_CASSANDRA_TYPE_UTF8;
 }
 /* }}} */
@@ -375,41 +373,134 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 }
 /* }}} */
 
-
-void parse_collection(pdo_cassandra_type col_type, const std::string &type, const std::string &data) {
+zval* parse_collection(const std::string &type, const std::string &data) {
 	std::cout << "** Data type to analyse: " << type << "\t data size: " << data.size() << std::endl;
 
 	// Extract Collection and data type
-	std::vector<pdo_cassandra_type> elt_types = pdo_cassandra_get_element_type_in_collection(type);
+	std::vector<pdo_cassandra_type> elt_types = pdo_cassandra_get_element_type_in_collection(PDO_CASSANDRA_TYPE_LIST, type);
 	unsigned short nbElements = stream_extractor<unsigned short>(reinterpret_cast <const unsigned char *>(data.c_str()));
 
 	std::cout << "** Nb Elements in the collection: " << nbElements << std::endl;
+
+	// ZVAl initialisation
+    zval *collection;
+    MAKE_STD_ZVAL(collection);
+    array_init(collection);
+
 	// Iterating trough the collection
 	const unsigned char *datap = reinterpret_cast<const unsigned char *>(data.c_str() + 2);
 	while (nbElements--)
 		{
 			unsigned short elem_size = stream_extractor<unsigned short>(datap);
-			std::cout << "Element size: " << elem_size << std::endl;
+			// TODO Make sure elem_size == 1
 			datap += 2;
-			switch (elt_type)
+
+			switch (elt_types[0])
 				{
                 case PDO_CASSANDRA_TYPE_INTEGER:
 					{
 						int value = stream_extractor<int>(datap);
 						std::cout << "Value: " << value << std::endl;
+                        add_next_index_long(collection, value);
 					}
 					break;
+                case PDO_CASSANDRA_TYPE_LONG:
+                    {
+                        long value = stream_extractor<long>(datap);
+                        add_next_index_long(collection, value);
+                    }
+                    break;
+
 				default:
 					// We consider this is a string for now :)
 					char *str = new char[elem_size + 1];
 					memcpy(str, datap, elem_size);
 					str[elem_size] = 0;
 					std::cout << "STR Value: " << str << std::endl;
+                    add_next_index_string(collection, str, 1);
 
 					break;
 				}
 			datap += elem_size;
 		}
+
+    // for a map:
+    //add_assoc_long(collection, "lemel", 2233001);
+	//	add_assoc_zval( zval* arg, char* key, zval* value )
+	return collection;
+}
+
+namespace StreamToZval {
+
+	zval* extract_zval(const unsigned char *binary, pdo_cassandra_type type, int size = 0) {
+		zval *ret;
+		MAKE_STD_ZVAL(ret);
+
+		if (type == PDO_CASSANDRA_TYPE_UTF8 || type == PDO_CASSANDRA_TYPE_ASCII) {
+			std::cout << "STR found" << std::endl;
+			Z_TYPE_P(ret) = IS_STRING;
+			char *str = new char[size + 1];
+			memcpy(str, binary, size);
+			str[size] = 0;
+			Z_STRVAL_P(ret) = str;
+			Z_STRLEN_P(ret) = size + 1;
+		}
+		if (type == PDO_CASSANDRA_TYPE_INTEGER) {
+			std::cout << "INT found" << std::endl;
+			Z_TYPE_P(ret) = IS_LONG;
+			Z_LVAL_P(ret) = stream_extractor<int>(binary);
+		}
+
+		return ret;
+
+	}
+
+};
+
+zval* parse_collection_map(const std::string &type, const std::string &data) {
+
+	std::cout << "** MAP ANALYSE: " << data.size() << std::endl;
+
+	// Extract Collection and data type
+	std::vector<pdo_cassandra_type> elt_types = pdo_cassandra_get_element_type_in_collection(PDO_CASSANDRA_TYPE_MAP, type);
+	unsigned short nbElements = stream_extractor<unsigned short>(reinterpret_cast <const unsigned char *>(data.c_str()));
+
+	std::cout << "** Nb Elements in the collection: " << nbElements << std::endl;
+
+	// ZVAl initialisation
+    zval *collection;
+    MAKE_STD_ZVAL(collection);
+    array_init(collection);
+	// Iterating trough the collection
+	const unsigned char *datap = reinterpret_cast<const unsigned char *>(data.c_str() + 2);
+	while (nbElements--)
+		{
+			// Reading key size
+			unsigned short key_size = stream_extractor<unsigned short>(datap);
+			datap += 2;
+
+			// Extracting value
+			const unsigned char *valuep = datap + key_size;
+			unsigned short value_size = stream_extractor<unsigned short>(valuep);
+			valuep += 2;
+			zval *value = StreamToZval::extract_zval(valuep, elt_types[1], value_size);
+
+			// Extracting key
+			if (elt_types[0] == PDO_CASSANDRA_TYPE_ASCII ||
+				elt_types[0] == PDO_CASSANDRA_TYPE_UTF8) {
+				char *str = new char[value_size + 1];
+				memcpy(str, datap, value_size);
+				str[value_size] = 0;
+				add_assoc_zval(collection, str, value);
+				// TODO free str?
+			} else {
+				// Numeric keys
+				//add_index_zval(collection, ulong key, value);
+			}
+			datap += value_size + 2 + key_size;
+		}
+
+	return collection;
 }
 
 /** {{{ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr, unsigned long *len, int *caller_frees TSRMLS_DC)
@@ -490,16 +581,38 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
 						*caller_frees = 1;
 					}
 					break;
-				case PDO_CASSANDRA_TYPE_SET:
-				case PDO_CASSANDRA_TYPE_MAP:
+
+
 				case PDO_CASSANDRA_TYPE_LIST:
+                case PDO_CASSANDRA_TYPE_SET:
 					{
 						// The return value of the parse collection must be the zval stuff
-						parse_collection(lparam_type, S->result.get ()->schema.value_types [current_column], (*col_it).value);
-						// Register what has to be registered here
+                        zval *result = parse_collection(S->result.get ()->schema.value_types [current_column], (*col_it).value);
+                        zval **ref = (zval **) emalloc(sizeof(zval));
+                        memcpy(ref, &result, sizeof(zval));
+
+                        *ptr = (char *)ref;
+                        //*ptr = (char *) subarray;
+                        *len = sizeof(zval);
+                        *caller_frees = 1;
+
 					}
-					// TODO break once the zval is properly set
-					// break;
+                    break;
+
+                case PDO_CASSANDRA_TYPE_MAP:
+					{
+						// The return value of the parse collection must be the zval stuff
+						zval *result = parse_collection_map(S->result.get ()->schema.value_types [current_column], (*col_it).value);
+                        zval **ref = (zval **) emalloc(sizeof(zval));
+                        memcpy(ref, &result, sizeof(zval));
+
+                        *ptr = (char *)ref;
+                        //*ptr = (char *) subarray;
+                        *len = sizeof(zval);
+                        *caller_frees = 1;
+
+					}
+                    break;
                 default:
                     *ptr          = const_cast <char *> ((*col_it).value.c_str());
                     *len          = (*col_it).value.size();
