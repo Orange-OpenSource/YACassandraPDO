@@ -235,17 +235,21 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
 }
 /* }}} */
 
-static pdo_cassandra_type pdo_cassandra_get_element_type_in_collection(const std::string &type)
+static std::vector<pdo_cassandra_type> pdo_cassandra_get_element_type_in_collection(const std::string &type)
 {
-   std::string real_type;
+   // std::string real_type;
 
-    if (type.find("org.apache.cassandra.db.marshal.") != std::string::npos)
-        real_type = type.substr(::strlen("org.apache.cassandra.db.marshal."));
-	else
-        real_type = type;
-	if (!real_type.compare(0, 7, "SetType")) {
-		real_type = real_type.substr(sizeof("SetType"), real_type.size() - sizeof("SetType") - 1);
-	}
+   //  if (type.find("org.apache.cassandra.db.marshal.") != std::string::npos)
+   //      real_type = type.substr(::strlen("org.apache.cassandra.db.marshal."));
+   // 	else
+   //      real_type = type;
+   // 	if (!real_type.compare(0, 7, "SetType")) {
+   // 		real_type = real_type.substr(sizeof("SetType"), real_type.size() - sizeof("SetType") - 1);
+   // 	}
+
+	// Couper entre les parentheses
+	// Splitter sur la virgule
+	// Iterer sur les chaines pour recuperer les types
 	return pdo_cassandra_get_cassandra_type(real_type);
 }
 
@@ -277,6 +281,10 @@ static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &ty
         return PDO_CASSANDRA_TYPE_DOUBLE;
     if (!real_type.compare(0, 7, "SetType"))
 		return PDO_CASSANDRA_TYPE_SET;
+    if (!real_type.compare(0, 7, "MapType"))
+		return PDO_CASSANDRA_TYPE_MAP;
+    if (!real_type.compare(0, 7, "ListType"))
+		return PDO_CASSANDRA_TYPE_LIST;
 
     return PDO_CASSANDRA_TYPE_UTF8;
 }
@@ -372,7 +380,7 @@ void parse_collection(pdo_cassandra_type col_type, const std::string &type, cons
 	std::cout << "** Data type to analyse: " << type << "\t data size: " << data.size() << std::endl;
 
 	// Extract Collection and data type
-	pdo_cassandra_type elt_type = pdo_cassandra_get_element_type_in_collection(type);
+	std::vector<pdo_cassandra_type> elt_types = pdo_cassandra_get_element_type_in_collection(type);
 	unsigned short nbElements = stream_extractor<unsigned short>(reinterpret_cast <const unsigned char *>(data.c_str()));
 
 	std::cout << "** Nb Elements in the collection: " << nbElements << std::endl;

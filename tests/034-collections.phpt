@@ -18,7 +18,9 @@ $db->exec ("CREATE KEYSPACE {$keyspace}  WITH REPLICATION = {'CLASS' : 'SimpleSt
 $db->exec ("USE {$keyspace}");
 $db->exec ("CREATE COLUMNFAMILY cf (my_key int PRIMARY KEY,
 				    set_test_vc set<varchar>,
-				    set_test_int set<int>)");
+				    set_test_int set<int>,
+				    map_test_vc_int map<varchar, int>,
+				    map_test_int_float map<int, float>)");
 
 /* echo "INSERTING 1 element" . PHP_EOL; */
 /* $db->exec("INSERT INTO cf (my_key, set_test_int) */
@@ -36,11 +38,11 @@ $db->exec ("CREATE COLUMNFAMILY cf (my_key int PRIMARY KEY,
 
 
 
-echo "INSERTING 3 elements" . PHP_EOL;
-$db->exec("INSERT INTO cf (my_key, set_test_int)
-		VALUES (3, {21, 42, 84, 45, 456});");
-// Display cf content
-print_r($db->query('SELECT set_test_int FROM cf WHERE my_key=3;')->fetchObject());
+/* echo "INSERTING 3 elements" . PHP_EOL; */
+/* $db->exec("INSERT INTO cf (my_key, set_test_int) */
+/* 		VALUES (3, {21, 42, 84, 45, 456});"); */
+/* // Display cf content */
+/* print_r($db->query('SELECT set_test_int FROM cf WHERE my_key=3;')->fetchObject()); */
 
 /* echo "INSERTING 1 string elems (size 2)" . PHP_EOL; */
 /* $db->exec("INSERT INTO cf (my_key, set_test_vc) */
@@ -56,11 +58,20 @@ print_r($db->query('SELECT set_test_int FROM cf WHERE my_key=3;')->fetchObject()
 /* print_r($db->query('SELECT set_test_vc FROM cf WHERE my_key=4;')->fetchObject()); */
 
 
-echo "INSERTING 3 string elems (size 2 and 5 and 8)" . PHP_EOL;
-$db->exec("INSERT INTO cf (my_key, set_test_vc)
-		VALUES (4, {'he', 'llowo', 'madafuck'});");
+/* echo "INSERTING 3 string elems (size 2 and 5 and 8)" . PHP_EOL; */
+/* $db->exec("INSERT INTO cf (my_key, map_test_vc) */
+/* 		VALUES (4, {'key1', 'llowo', 'madafuck'});"); */
+/* // Display cf content */
+/* print_r($db->query('SELECT set_test_vc FROM cf WHERE my_key=4;')->fetchObject()); */
+
+
+echo "INSERTING 3 string elems MAP (size 2 and 5 and 8)" . PHP_EOL;
+$db->exec("INSERT INTO cf (my_key, map_test_vc_int)
+		VALUES (400, {'key1': 1, 'key2': 2, 'key3': 3});");
 // Display cf content
-print_r($db->query('SELECT set_test_vc FROM cf WHERE my_key=4;')->fetchObject());
+print_r($db->query('SELECT map_test_vc_int FROM cf WHERE my_key=400;')->fetchObject());
+
+
 
 // Insertion test
 /* $db->exec("INSERT INTO cf (my_key, set_test_vc) */
