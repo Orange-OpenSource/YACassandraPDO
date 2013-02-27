@@ -1,6 +1,7 @@
 # Introduction
 
 Pretty much very experimental PDO driver for Cassandra CQL.
+
 This repository is a fork of: https://code.google.com/a/apache-extras.org/p/cassandra-pdo/
 We cloned it on GitHub because the original project seems dead. 
 
