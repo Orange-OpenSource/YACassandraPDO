@@ -18,10 +18,11 @@ try {
 $db->exec ("CREATE KEYSPACE {$keyspace}  WITH REPLICATION = {'CLASS' : 'SimpleStrategy', 'replication_factor': 1}");
 $db->exec ("USE {$keyspace}");
 $db->exec ("CREATE COLUMNFAMILY test_null (id int primary key,
-					   my_int int);");
+					   my_int int,
+					   my_ascii ascii);");
 
 $db->exec ("INSERT INTO test_null(id) values(1);");
-$stmt = $db->prepare("SELECT my_int FROM test_null WHERE id=1;");
+$stmt = $db->prepare("SELECT my_int, my_ascii FROM test_null WHERE id=1;");
 $stmt->execute();
 var_dump($stmt->fetch(PDO::FETCH_ASSOC));
 

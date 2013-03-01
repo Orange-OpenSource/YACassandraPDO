@@ -22,14 +22,14 @@ $stmt = $db->prepare ("SELECT * FROM extended_users");
 $stmt->execute ();
 var_dump ($stmt->fetchAll(PDO::FETCH_ASSOC));
 
-$stmt = $db->prepare ("SELECT * FROM extended_users WHERE my_key = :key");
-$stmt->bindValue (':key', 'two columns');
-$stmt->execute ();
-var_dump ($stmt->fetchAll(PDO::FETCH_ASSOC));
+/* $stmt = $db->prepare ("SELECT * FROM extended_users WHERE my_key = :key"); */
+/* $stmt->bindValue (':key', 'two columns'); */
+/* $stmt->execute (); */
+/* var_dump ($stmt->fetchAll(PDO::FETCH_ASSOC)); */
 
-$stmt->bindValue (':key', 'four columns');
-$stmt->execute ();
-var_dump ($stmt->fetchAll(PDO::FETCH_ASSOC));
+/* $stmt->bindValue (':key', 'four columns'); */
+/* $stmt->execute (); */
+/* var_dump ($stmt->fetchAll(PDO::FETCH_ASSOC)); */
 
 pdo_cassandra_done ($db, $keyspace);
 

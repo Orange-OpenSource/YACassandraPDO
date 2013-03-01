@@ -215,6 +215,10 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
         real_type = type;
     }
 
+	if (!real_type.compare("AsciiType") ||
+		!real_type.compare("UTF8Type"))
+		return PDO_PARAM_ZVAL;
+
     if (!real_type.compare("IntegerType") ||
         !real_type.compare("Int32Type") ||
         !real_type.compare("LongType") ||
@@ -229,6 +233,8 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
 	if (!real_type.compare("FloatType") ||
 		!real_type.compare("DoubleType"))
 		return PDO_PARAM_ZVAL;
+
+
 	// Collection case
 	if (!real_type.compare(0, sizeof("SetType") - 1, "SetType")
 		|| !real_type.compare(0, sizeof("MapType") - 1, "MapType")
@@ -365,7 +371,7 @@ namespace StreamExtraction {
 																 0, // UUID
 																 0, // LEXICAL
 																 0, // TIMEUUID
-																 0, // BOOLEAN
+																 evaluate_integer_type<bool>, // BOOLEAN
 																 evaluate_integer_type<long>, // VARINT
 																 evaluate_float_type<float>, // FLOAT
 																 evaluate_float_type<double>, // DOUBLE
@@ -378,7 +384,15 @@ namespace StreamExtraction {
 	/**
 	 * Allocates a zval, and reads a value according to the specified type
 	 */
-	zval* extract_zval(const unsigned char *binary, pdo_cassandra_type type, int size = 0) {
+	zval* extract_zval(const unsigned char *binary, pdo_cassandra_type type, int size) {
+		if (!size) {
+			// We create a null zvalue in return
+			zval *ret;
+			MAKE_STD_ZVAL(ret);
+			ret->type = IS_NULL;
+			ret->value.lval = 0;
+			return ret;
+		}
 		EvaluatorType pe = evaluations[type];
 		if (!pe) {
 			std::cout << "Zval extraction for type: " << (int)type << " not handled yet" << std::endl;
@@ -544,75 +558,53 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
             } else {
         	    lparam_type = pdo_cassandra_get_cassandra_type(S->result.get ()->schema.value_types [current_column]);
             }
-    	    switch (lparam_type)
-				{
-                case PDO_CASSANDRA_TYPE_INTEGER:
-					{
-						// Return is still casted to a long as PDO manipulates long values
-						// However this cast is safe
-						long value = pdo_cassandra_marshal_numeric<int>(stmt, (*col_it).value);
-						long *p    = (long *) emalloc(sizeof(long));
-						memcpy(p, &value, sizeof(long));
 
-						*ptr          = (char *)p;
-						*len          = sizeof(long);
-						*caller_frees = 1;
-					}
-					break;
-
-                case PDO_CASSANDRA_TYPE_VARINT:
-                case PDO_CASSANDRA_TYPE_LONG:
-					{
-						long value = pdo_cassandra_marshal_numeric<long>(stmt, (*col_it).value);
-						long *p    = (long *) emalloc(sizeof(long));
-						memcpy(p, &value, sizeof(long));
-
-						*ptr          = (char *)p;
-						*len          = sizeof(long);
-						*caller_frees = 1;
-					}
-					break;
-
-                case PDO_CASSANDRA_TYPE_FLOAT:
-                case PDO_CASSANDRA_TYPE_DOUBLE:
-					{
+			// switch (lparam_type)
+			// 	{
+                // case PDO_CASSANDRA_TYPE_FLOAT:
+                // case PDO_CASSANDRA_TYPE_DOUBLE:
+                // case PDO_CASSANDRA_TYPE_VARINT:
+                // case PDO_CASSANDRA_TYPE_LONG:
+				// case PDO_CASSANDRA_TYPE_INTEGER:
+				// 	{
 						zval **ref = (zval **) emalloc(sizeof(*ref));
 						*ref = StreamExtraction::extract_zval(reinterpret_cast<const unsigned char*>((*col_it).value.c_str()),
-															  lparam_type, (*col_it).value.size());
+															  lparam_type,
+															  (*col_it).value.size());
 						*ptr = (char *)ref;
-                        *len = sizeof(zval); //FIXME NOT SURE
-                        *caller_frees = 1;
-					}
-					break;
+						*len = sizeof(zval);
+						*caller_frees = 1;
+						break;
+				// 	}
 
-				case PDO_CASSANDRA_TYPE_LIST:
-                case PDO_CASSANDRA_TYPE_SET:
-					{
-						// The return value of the parse collection must be the zval stuff
-                        zval **ref = (zval **) emalloc(sizeof(zval));
-                        *ref = parse_collection(S->result.get ()->schema.value_types [current_column], (*col_it).value);
-                        *ptr = (char *)ref;
-                        *len = sizeof(zval); //FIXME NOT SURE
-                        *caller_frees = 1;
-					}
-                    break;
-
-                case PDO_CASSANDRA_TYPE_MAP:
-					{
-						// The return value of the parse collection must be the zval stuff
-                        zval **ref = (zval **) emalloc(sizeof(*ref));
-						*ref = parse_collection_map(S->result.get ()->schema.value_types [current_column], (*col_it).value);
-                        *ptr = (char *)ref;
-                        *len = sizeof(zval); //FIXME NOT SURE
-                        *caller_frees = 1;
-					}
-                    break;
-                default:
-                    *ptr          = const_cast <char *> ((*col_it).value.c_str());
-                    *len          = (*col_it).value.size();
-                    *caller_frees = 0;
-					break;
-				}
+				// case PDO_CASSANDRA_TYPE_LIST:
+				// case PDO_CASSANDRA_TYPE_SET:
+				// 	{
+				// 		// The return value of the parse collection must be the zval stuff
+				// 		zval **ref = (zval **) emalloc(sizeof(zval));
+				// 		*ref = parse_collection(S->result.get ()->schema.value_types [current_column], (*col_it).value);
+				// 		*ptr = (char *)ref;
+				// 		*len = sizeof(zval); //FIXME NOT SURE
+				// 		*caller_frees = 1;
+				// 	}
+				// 	break;
+				// case PDO_CASSANDRA_TYPE_MAP:
+				// 	{
+				// 		// The return value of the parse collection must be the zval stuff
+				// 		zval **ref = (zval **) emalloc(sizeof(*ref));
+				// 		*ref = parse_collection_map(S->result.get ()->schema.value_types [current_column], (*col_it).value);
+				// 		*ptr = (char *)ref;
+				// 		*len = sizeof(zval); //FIXME NOT SURE
+				// 		*caller_frees = 1;
+				// 	}
+				// 	break;
+				// default:
+				// 	std::cout << "LEN SIZE:" << (*col_it).value.size() << std::endl;
+				// 	*ptr          = const_cast <char *> ((*col_it).value.c_str());
+				// 	*len          = (*col_it).value.size();
+				// 	*caller_frees = 0;
+				// 	break;
+						//}
             return 1;
         }
     }
