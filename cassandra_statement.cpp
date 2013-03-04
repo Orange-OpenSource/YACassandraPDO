@@ -208,6 +208,8 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 static pdo_param_type pdo_cassandra_get_type(const std::string &type)
 {
 
+    //TODO Should'nt we always return a ZVAL???
+
     std::string real_type;
 
     if (type.find("org.apache.cassandra.db.marshal.") != std::string::npos) {
@@ -215,8 +217,6 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
     } else {
         real_type = type;
     }
-
-    std::cout << "pdo_cassandra_get_type:" << type << std::endl;
 
 	if (!real_type.compare("AsciiType") ||
 		!real_type.compare("UTF8Type"))
