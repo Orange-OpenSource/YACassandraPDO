@@ -2,6 +2,19 @@
 
 Pretty much very experimental PDO driver for Cassandra CQL.
 
+This repository is a fork of: https://code.google.com/a/apache-extras.org/p/cassandra-pdo/
+We cloned it on GitHub because the original project seems dead. 
+
+This version is developped for CQL3 target, we do not provide support for other versions of CQL.
+
+We need some testers, so if you find BUGS or inconsistencies, feel free to report them.
+
+# What is different from the Datastax version?
+ - Added support for float numbers
+ - Added support for collections (map, set, list)
+ - Fixed a lot of bugs on integer convertions
+ - Fixed parameters binding
+ - Some other minor fixes
 
 # Dependencies
 
