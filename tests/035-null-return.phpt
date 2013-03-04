@@ -28,3 +28,9 @@ var_dump($stmt->fetch(PDO::FETCH_ASSOC));
 
 
 --EXPECT--
+array(2) {
+  ["my_int"]=>
+  NULL
+  ["my_ascii"]=>
+  NULL
+}

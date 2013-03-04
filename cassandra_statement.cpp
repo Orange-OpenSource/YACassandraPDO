@@ -207,6 +207,7 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 */
 static pdo_param_type pdo_cassandra_get_type(const std::string &type)
 {
+
     std::string real_type;
 
     if (type.find("org.apache.cassandra.db.marshal.") != std::string::npos) {
@@ -214,6 +215,8 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
     } else {
         real_type = type;
     }
+
+    std::cout << "pdo_cassandra_get_type:" << type << std::endl;
 
 	if (!real_type.compare("AsciiType") ||
 		!real_type.compare("UTF8Type"))
@@ -224,7 +227,7 @@ static pdo_param_type pdo_cassandra_get_type(const std::string &type)
         !real_type.compare("LongType") ||
         !real_type.compare("DateType") ||
         !real_type.compare("CounterColumnType")) {
-        return PDO_PARAM_INT;
+        return PDO_PARAM_ZVAL;
     }
     if (!real_type.compare("BooleanType")) {
         return PDO_PARAM_BOOL;
@@ -324,11 +327,10 @@ namespace StreamExtraction {
 		zval *ret;
 		MAKE_STD_ZVAL(ret);
 		Z_TYPE_P(ret) = IS_STRING;
-		char *str = (char *) emalloc(sizeof(*str) * (size + 1));
+		char *str = (char *) emalloc(sizeof(*str) * (size));
 		memcpy(str, binary, size);
-		str[size] = 0;
 		Z_STRVAL_P(ret) = str;
-		Z_STRLEN_P(ret) = size + 1;
+		Z_STRLEN_P(ret) = size;
 		return ret;
 	}
 
@@ -559,62 +561,51 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
         	    lparam_type = pdo_cassandra_get_cassandra_type(S->result.get ()->schema.value_types [current_column]);
             }
 
-			// switch (lparam_type)
-			// 	{
-                // case PDO_CASSANDRA_TYPE_FLOAT:
-                // case PDO_CASSANDRA_TYPE_DOUBLE:
-                // case PDO_CASSANDRA_TYPE_VARINT:
-                // case PDO_CASSANDRA_TYPE_LONG:
-				// case PDO_CASSANDRA_TYPE_INTEGER:
-				// 	{
-						zval **ref = (zval **) emalloc(sizeof(*ref));
-						*ref = StreamExtraction::extract_zval(reinterpret_cast<const unsigned char*>((*col_it).value.c_str()),
-															  lparam_type,
-															  (*col_it).value.size());
+			switch (lparam_type)
+				{
+				case PDO_CASSANDRA_TYPE_LIST:
+				case PDO_CASSANDRA_TYPE_SET:
+					{
+						// The return value of the parse collection must be the zval stuff
+						zval **ref = (zval **) emalloc(sizeof(zval));
+						*ref = parse_collection(S->result.get ()->schema.value_types [current_column], (*col_it).value);
 						*ptr = (char *)ref;
-						*len = sizeof(zval);
+						*len = sizeof(zval); //FIXME NOT SURE
 						*caller_frees = 1;
 						break;
-				// 	}
+					}
 
-				// case PDO_CASSANDRA_TYPE_LIST:
-				// case PDO_CASSANDRA_TYPE_SET:
-				// 	{
-				// 		// The return value of the parse collection must be the zval stuff
-				// 		zval **ref = (zval **) emalloc(sizeof(zval));
-				// 		*ref = parse_collection(S->result.get ()->schema.value_types [current_column], (*col_it).value);
-				// 		*ptr = (char *)ref;
-				// 		*len = sizeof(zval); //FIXME NOT SURE
-				// 		*caller_frees = 1;
-				// 	}
-				// 	break;
-				// case PDO_CASSANDRA_TYPE_MAP:
-				// 	{
-				// 		// The return value of the parse collection must be the zval stuff
-				// 		zval **ref = (zval **) emalloc(sizeof(*ref));
-				// 		*ref = parse_collection_map(S->result.get ()->schema.value_types [current_column], (*col_it).value);
-				// 		*ptr = (char *)ref;
-				// 		*len = sizeof(zval); //FIXME NOT SURE
-				// 		*caller_frees = 1;
-				// 	}
-				// 	break;
-				// default:
-				// 	std::cout << "LEN SIZE:" << (*col_it).value.size() << std::endl;
-				// 	*ptr          = const_cast <char *> ((*col_it).value.c_str());
-				// 	*len          = (*col_it).value.size();
-				// 	*caller_frees = 0;
-				// 	break;
-						//}
+				case PDO_CASSANDRA_TYPE_MAP:
+					{
+						// The return value of the parse collection must be the zval stuff
+						zval **ref = (zval **) emalloc(sizeof(*ref));
+						*ref = parse_collection_map(S->result.get ()->schema.value_types [current_column], (*col_it).value);
+						*ptr = (char *)ref;
+						*len = sizeof(zval); //FIXME NOT SURE
+						*caller_frees = 1;
+						break;
+					}
+
+				default:
+
+                    zval **ref = (zval **) emalloc(sizeof(*ref));
+                    *ref = StreamExtraction::extract_zval(reinterpret_cast<const unsigned char*>((*col_it).value.c_str()),
+                                                          lparam_type,
+                                                          (*col_it).value.size());
+                    *ptr = (char *)ref;
+                    *len = sizeof(zval);
+                    *caller_frees = 1;
+                    break;
+				}
             return 1;
         }
     }
     return 0;
-
 }
 /* }}} */
 
 /** {{{ static int pdo_cassandra_stmt_get_column_meta(pdo_stmt_t *stmt, long colno, zval *return_value TSRMLS_DC)
-*/
+ */
 static int pdo_cassandra_stmt_get_column_meta(pdo_stmt_t *stmt, long colno, zval *return_value TSRMLS_DC)
 {
     pdo_cassandra_stmt *S = static_cast <pdo_cassandra_stmt *>(stmt->driver_data);
