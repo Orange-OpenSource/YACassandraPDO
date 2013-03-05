@@ -17,7 +17,7 @@
 #include "php_pdo_cassandra.hpp"
 #include "php_pdo_cassandra_int.hpp"
 #include <sstream>
-static pdo_param_type pdo_cassandra_get_type(const std::string &type);
+
 template <class T>
 T pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &binary);
 static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &type);
@@ -143,12 +143,7 @@ static zend_bool pdo_cassandra_add_column(pdo_stmt_t *stmt, const std::string &n
         S->original_column_names.insert(ColumnMap::value_type(name, order));
 
         pdo_param_type name_type;
-        if (S->result.get ()->schema.name_types[name].size () == 0) {
-            name_type = pdo_cassandra_get_type(S->result.get ()->schema.default_name_type);
-        } else {
-            name_type = pdo_cassandra_get_type(S->result.get ()->schema.name_types [name]);
-        }
-
+        name_type = PDO_PARAM_ZVAL;
         if (name_type == PDO_PARAM_INT && name.size() <= 8) {
             char label[96];
             size_t len;
@@ -203,66 +198,20 @@ static int pdo_cassandra_stmt_fetch(pdo_stmt_t *stmt, enum pdo_fetch_orientation
 }
 /* }}} */
 
-/** {{{ pdo_cassandra_type pdo_cassandra_get_type(const std::string &type)
-*/
-static pdo_param_type pdo_cassandra_get_type(const std::string &type)
-{
-
-    //TODO Should'nt we always return a ZVAL???
-
-    std::string real_type;
-
-    if (type.find("org.apache.cassandra.db.marshal.") != std::string::npos) {
-        real_type = type.substr(::strlen("org.apache.cassandra.db.marshal."));
-    } else {
-        real_type = type;
-    }
-
-	if (!real_type.compare("AsciiType") ||
-		!real_type.compare("UTF8Type"))
-		return PDO_PARAM_ZVAL;
-
-    if (!real_type.compare("IntegerType") ||
-        !real_type.compare("Int32Type") ||
-        !real_type.compare("LongType") ||
-        !real_type.compare("DateType") ||
-        !real_type.compare("CounterColumnType")) {
-        return PDO_PARAM_ZVAL;
-    }
-    if (!real_type.compare("BooleanType")) {
-        return PDO_PARAM_BOOL;
-    }
-	// Float and doubles do not exist in PDO, they are treated using zval
-	if (!real_type.compare("FloatType") ||
-		!real_type.compare("DoubleType"))
-		return PDO_PARAM_ZVAL;
-
-
-	// Collection case
-	if (!real_type.compare(0, sizeof("SetType") - 1, "SetType")
-		|| !real_type.compare(0, sizeof("MapType") - 1, "MapType")
-        || !real_type.compare(0, sizeof("ListType") - 1, "ListType")) {
-
-        return PDO_PARAM_ZVAL;
-    }
-    return PDO_PARAM_STR;
-}
-/* }}} */
-
 static std::vector<pdo_cassandra_type> pdo_cassandra_get_element_type_in_collection(pdo_cassandra_type col_type, const std::string &type)
 {
-	std::vector<pdo_cassandra_type> ret;
-	std::string real_type;
-	int st = type.find('(') + 1;
-	std::string rtype = type.substr(st, type.size() - st - 1);
-	if (col_type == PDO_CASSANDRA_TYPE_MAP) {
-		st = rtype.find(',');
-		ret.push_back(pdo_cassandra_get_cassandra_type(rtype.substr(0, st)));
-		ret.push_back(pdo_cassandra_get_cassandra_type(rtype.substr(st + 1)));
-	}
-	else
-		ret.push_back(pdo_cassandra_get_cassandra_type(rtype));
-	return ret;
+    std::vector<pdo_cassandra_type> ret;
+    std::string real_type;
+    int st = type.find('(') + 1;
+    std::string rtype = type.substr(st, type.size() - st - 1);
+    if (col_type == PDO_CASSANDRA_TYPE_MAP) {
+        st = rtype.find(',');
+        ret.push_back(pdo_cassandra_get_cassandra_type(rtype.substr(0, st)));
+        ret.push_back(pdo_cassandra_get_cassandra_type(rtype.substr(st + 1)));
+    }
+    else
+        ret.push_back(pdo_cassandra_get_cassandra_type(rtype));
+    return ret;
 }
 
 /** {{{ pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &type)
@@ -274,7 +223,7 @@ static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &ty
 
     if (type.find("org.apache.cassandra.db.marshal.") != std::string::npos)
         real_type = type.substr(::strlen("org.apache.cassandra.db.marshal."));
-	else
+    else
         real_type = type;
 
     if (!real_type.compare("IntegerType"))
@@ -291,117 +240,117 @@ static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &ty
     if (!real_type.compare("DoubleType"))
         return PDO_CASSANDRA_TYPE_DOUBLE;
     if (!real_type.compare(0, 7, "SetType"))
-		return PDO_CASSANDRA_TYPE_SET;
+        return PDO_CASSANDRA_TYPE_SET;
     if (!real_type.compare(0, 7, "MapType"))
-		return PDO_CASSANDRA_TYPE_MAP;
+        return PDO_CASSANDRA_TYPE_MAP;
     if (!real_type.compare(0, 8, "ListType"))
-		return PDO_CASSANDRA_TYPE_LIST;
+        return PDO_CASSANDRA_TYPE_LIST;
     return PDO_CASSANDRA_TYPE_UTF8;
 }
 /* }}} */
 
 namespace StreamExtraction {
 
-	/**
-	 * Read n bytes to a primitive type
-	 */
-	template <class T>
-	T extract(const unsigned char *bytes)
-	{
-		T val = T();
-		unsigned char *pval = reinterpret_cast<unsigned char *>(&val) + sizeof(val);
-		for (size_t i = 0; i < sizeof(T); i++) {
-		--pval;
-		*pval = bytes[i];
-		}
-		return val;
-	}
+    /**
+     * Read n bytes to a primitive type
+     */
+    template <class T>
+    T extract(const unsigned char *bytes)
+    {
+        T val = T();
+        unsigned char *pval = reinterpret_cast<unsigned char *>(&val) + sizeof(val);
+        for (size_t i = 0; i < sizeof(T); i++) {
+        --pval;
+        *pval = bytes[i];
+        }
+        return val;
+    }
 
-	// Zval creators signature
-	typedef zval *(*EvaluatorType)(const unsigned char *binary, int size);
+    // Zval creators signature
+    typedef zval *(*EvaluatorType)(const unsigned char *binary, int size);
 
-	/**
-	 * Evaluator: Ascii extraction
-	 */
-	zval *evaluate_ascii(const unsigned char *binary, int size) {
-		zval *ret;
-		MAKE_STD_ZVAL(ret);
-		Z_TYPE_P(ret) = IS_STRING;
-		char *str = (char *) emalloc(sizeof(*str) * (size));
-		memcpy(str, binary, size);
-		Z_STRVAL_P(ret) = str;
-		Z_STRLEN_P(ret) = size;
-		return ret;
-	}
+    /**
+     * Evaluator: Ascii extraction
+     */
+    zval *evaluate_ascii(const unsigned char *binary, int size) {
+        zval *ret;
+        MAKE_STD_ZVAL(ret);
+        Z_TYPE_P(ret) = IS_STRING;
+        char *str = (char *) emalloc(sizeof(*str) * (size));
+        memcpy(str, binary, size);
+        Z_STRVAL_P(ret) = str;
+        Z_STRLEN_P(ret) = size;
+        return ret;
+    }
 
-	/**
-	 * Evaluator: integer and long extractions
-	 */
-	template <class T>
-	zval *evaluate_integer_type(const unsigned char *binary, int size) {
-		//		assert(size == sizeof(T) && "evaluate_integer_type: size differs");
-		zval *ret;
-		MAKE_STD_ZVAL(ret);
-		Z_TYPE_P(ret) = IS_LONG;
-		Z_LVAL_P(ret) = 0L;
-		Z_LVAL_P(ret) = StreamExtraction::extract<T>(binary);
-		return ret;
-	}
+    /**
+     * Evaluator: integer and long extractions
+     */
+    template <class T>
+    zval *evaluate_integer_type(const unsigned char *binary, int size) {
+        //      assert(size == sizeof(T) && "evaluate_integer_type: size differs");
+        zval *ret;
+        MAKE_STD_ZVAL(ret);
+        Z_TYPE_P(ret) = IS_LONG;
+        Z_LVAL_P(ret) = 0L;
+        Z_LVAL_P(ret) = StreamExtraction::extract<T>(binary);
+        return ret;
+    }
 
-	/**
-	 * Evaluator: float and double extraction
-	 */
-	template <class T>
-	zval *evaluate_float_type(const unsigned char *binary, int size) {
-		//		assert(size == sizeof(T) && "evaluate_float_type: size differs");
-		zval *ret;
-		MAKE_STD_ZVAL(ret);
-		Z_TYPE_P(ret) = IS_DOUBLE;
-		Z_DVAL_P(ret) = (double)0.0;
-		Z_DVAL_P(ret) = StreamExtraction::extract<T>(binary);
-		return ret;
-	}
+    /**
+     * Evaluator: float and double extraction
+     */
+    template <class T>
+    zval *evaluate_float_type(const unsigned char *binary, int size) {
+        //      assert(size == sizeof(T) && "evaluate_float_type: size differs");
+        zval *ret;
+        MAKE_STD_ZVAL(ret);
+        Z_TYPE_P(ret) = IS_DOUBLE;
+        Z_DVAL_P(ret) = (double)0.0;
+        Z_DVAL_P(ret) = StreamExtraction::extract<T>(binary);
+        return ret;
+    }
 
-	/**
-	 * Pointers on evaluators indexed by the pdo type
-	 */
-	EvaluatorType evaluations[PDO_CASSANDRA_TYPE_UNKNOWN + 1] = {0, // BYTES
-																 evaluate_ascii, // ASCII
-																 evaluate_ascii, // UTF8
-																 evaluate_integer_type<int>, // INTEGER
-																 evaluate_integer_type<long>, // LONG
-																 0, // UUID
-																 0, // LEXICAL
-																 0, // TIMEUUID
-																 evaluate_integer_type<bool>, // BOOLEAN
-																 evaluate_integer_type<long>, // VARINT
-																 evaluate_float_type<float>, // FLOAT
-																 evaluate_float_type<double>, // DOUBLE
-																 0, // SET
-																 0, // MAP
-																 0, // LIST
-																 0};// UNKNOWN
+    /**
+     * Pointers on evaluators indexed by the pdo type
+     */
+    EvaluatorType evaluations[PDO_CASSANDRA_TYPE_UNKNOWN + 1] = {0, // BYTES
+                                                                 evaluate_ascii, // ASCII
+                                                                 evaluate_ascii, // UTF8
+                                                                 evaluate_integer_type<int>, // INTEGER
+                                                                 evaluate_integer_type<long>, // LONG
+                                                                 0, // UUID
+                                                                 0, // LEXICAL
+                                                                 0, // TIMEUUID
+                                                                 evaluate_integer_type<bool>, // BOOLEAN
+                                                                 evaluate_integer_type<long>, // VARINT
+                                                                 evaluate_float_type<float>, // FLOAT
+                                                                 evaluate_float_type<double>, // DOUBLE
+                                                                 0, // SET
+                                                                 0, // MAP
+                                                                 0, // LIST
+                                                                 0};// UNKNOWN
 
 
-	/**
-	 * Allocates a zval, and reads a value according to the specified type
-	 */
-	zval* extract_zval(const unsigned char *binary, pdo_cassandra_type type, int size) {
-		if (!size) {
-			// We create a null zvalue in return
-			zval *ret;
-			MAKE_STD_ZVAL(ret);
-			ret->type = IS_NULL;
-			ret->value.lval = 0;
-			return ret;
-		}
-		EvaluatorType pe = evaluations[type];
-		if (!pe) {
-			std::cout << "Zval extraction for type: " << (int)type << " not handled yet" << std::endl;
-			//TODO raise exception
-		}
-		return (*pe)(binary, size);
-	}
+    /**
+     * Allocates a zval, and reads a value according to the specified type
+     */
+    zval* extract_zval(const unsigned char *binary, pdo_cassandra_type type, int size) {
+        if (!size) {
+            // We create a null zvalue in return
+            zval *ret;
+            MAKE_STD_ZVAL(ret);
+            ret->type = IS_NULL;
+            ret->value.lval = 0;
+            return ret;
+        }
+        EvaluatorType pe = evaluations[type];
+        if (!pe) {
+            std::cout << "Zval extraction for type: " << (int)type << " not handled yet" << std::endl;
+            //TODO raise exception
+        }
+        return (*pe)(binary, size);
+    }
 
 };
 
@@ -409,14 +358,14 @@ template <class T>
 T pdo_cassandra_marshal_numeric(pdo_stmt_t *stmt, const std::string &binary)
 {
     if (sizeof(T) != binary.size()) {
-		// Binary is null
-		if (!binary.size())
-			return T();
+        // Binary is null
+        if (!binary.size())
+            return T();
         pdo_cassandra_error(stmt->dbh, PDO_CASSANDRA_INTEGER_CONVERSION_ERROR,
-							"pdo_cassandra_marshal_numeric: Binary stream and receiver size doesn't match", "");
+                            "pdo_cassandra_marshal_numeric: Binary stream and receiver size doesn't match", "");
         return T();
     }
-	return StreamExtraction::extract<T>(reinterpret_cast <const unsigned char *>(binary.c_str()));
+    return StreamExtraction::extract<T>(reinterpret_cast <const unsigned char *>(binary.c_str()));
 }
 
 
@@ -448,12 +397,7 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
     if (H->preserve_values) {
         stmt->columns[colno].param_type = PDO_PARAM_STR;
     } else {
-        // Do we have schema?
-        if (S->result.get ()->schema.value_types [current_column].size() == 0) {
-            stmt->columns[colno].param_type = pdo_cassandra_get_type(S->result.get ()->schema.default_value_type);
-        } else {
-            stmt->columns[colno].param_type = pdo_cassandra_get_type(S->result.get ()->schema.value_types [current_column]);
-        }
+        stmt->columns[colno].param_type = PDO_PARAM_ZVAL;
     }
 
     stmt->columns[colno].precision  = 0;
@@ -464,72 +408,72 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
 
 zval* parse_collection(const std::string &type, const std::string &data) {
 
-	// Extract Collection and data type
-	std::vector<pdo_cassandra_type> elt_types = pdo_cassandra_get_element_type_in_collection(PDO_CASSANDRA_TYPE_LIST, type);
-	//	assert((elt_types.size() == 1) && "parse_collection elt_types.size() == 1");
-	unsigned short nbElements = StreamExtraction::extract<unsigned short>(reinterpret_cast <const unsigned char *>(data.c_str()));
+    // Extract Collection and data type
+    std::vector<pdo_cassandra_type> elt_types = pdo_cassandra_get_element_type_in_collection(PDO_CASSANDRA_TYPE_LIST, type);
+    //  assert((elt_types.size() == 1) && "parse_collection elt_types.size() == 1");
+    unsigned short nbElements = StreamExtraction::extract<unsigned short>(reinterpret_cast <const unsigned char *>(data.c_str()));
 
-	// ZVAl initialisation
+    // ZVAl initialisation
     zval *collection;
     MAKE_STD_ZVAL(collection);
     array_init(collection);
 
-	// Iterating trough the collection
-	const unsigned char *datap = reinterpret_cast<const unsigned char *>(data.c_str() + 2);
-	while (nbElements--)
-		{
-			unsigned short elem_size = StreamExtraction::extract<unsigned short>(datap);
-			datap += 2;
-			zval *zv = StreamExtraction::extract_zval(datap, elt_types[0], elem_size);
-			add_next_index_zval(collection, zv);
-			datap += elem_size;
-		}
-	return collection;
+    // Iterating trough the collection
+    const unsigned char *datap = reinterpret_cast<const unsigned char *>(data.c_str() + 2);
+    while (nbElements--)
+        {
+            unsigned short elem_size = StreamExtraction::extract<unsigned short>(datap);
+            datap += 2;
+            zval *zv = StreamExtraction::extract_zval(datap, elt_types[0], elem_size);
+            add_next_index_zval(collection, zv);
+            datap += elem_size;
+        }
+    return collection;
 }
 
 zval* parse_collection_map(const std::string &type, const std::string &data) {
 
-	// Extract Collection and data type
-	std::vector<pdo_cassandra_type> elt_types = pdo_cassandra_get_element_type_in_collection(PDO_CASSANDRA_TYPE_MAP, type);
-	unsigned short nbElements = StreamExtraction::extract<unsigned short>(reinterpret_cast <const unsigned char *>(data.c_str()));
+    // Extract Collection and data type
+    std::vector<pdo_cassandra_type> elt_types = pdo_cassandra_get_element_type_in_collection(PDO_CASSANDRA_TYPE_MAP, type);
+    unsigned short nbElements = StreamExtraction::extract<unsigned short>(reinterpret_cast <const unsigned char *>(data.c_str()));
 
-	// ZVAl initialisation
+    // ZVAl initialisation
     zval *collection;
     MAKE_STD_ZVAL(collection);
     array_init(collection);
-	// Iterating trough the collection
-	const unsigned char *datap = reinterpret_cast<const unsigned char *>(data.c_str() + 2);
-	while (nbElements--)
-		{
-			// Reading key size
-			unsigned short key_size = StreamExtraction::extract<unsigned short>(datap);
-			datap += 2;
+    // Iterating trough the collection
+    const unsigned char *datap = reinterpret_cast<const unsigned char *>(data.c_str() + 2);
+    while (nbElements--)
+        {
+            // Reading key size
+            unsigned short key_size = StreamExtraction::extract<unsigned short>(datap);
+            datap += 2;
 
-			// Extracting value
-			const unsigned char *valuep = datap + key_size;
-			unsigned short value_size = StreamExtraction::extract<unsigned short>(valuep);
-			valuep += 2;
-			zval *value = StreamExtraction::extract_zval(valuep, elt_types[1], value_size);
+            // Extracting value
+            const unsigned char *valuep = datap + key_size;
+            unsigned short value_size = StreamExtraction::extract<unsigned short>(valuep);
+            valuep += 2;
+            zval *value = StreamExtraction::extract_zval(valuep, elt_types[1], value_size);
 
-			// Extracting key and pushing the zval in the collection
-			if (elt_types[0] == PDO_CASSANDRA_TYPE_ASCII ||
-				elt_types[0] == PDO_CASSANDRA_TYPE_UTF8) {
-				// String key case
-				char *str = new char[value_size + 1];
-				memcpy(str, datap, value_size);
-				str[value_size] = 0;
-				add_assoc_zval(collection, str, value);
-				// TODO free str?
-			} else {
-				// Numeric keys case
-				assert(key_size == sizeof(long) && "parse_collection_map key_size assert");
-				long key = StreamExtraction::extract<int>(datap);
-				add_index_zval(collection, key, value);
-			}
-			datap += value_size + 2 + key_size;
-		}
+            // Extracting key and pushing the zval in the collection
+            if (elt_types[0] == PDO_CASSANDRA_TYPE_ASCII ||
+                elt_types[0] == PDO_CASSANDRA_TYPE_UTF8) {
+                // String key case
+                char *str = new char[value_size + 1];
+                memcpy(str, datap, value_size);
+                str[value_size] = 0;
+                add_assoc_zval(collection, str, value);
+                // TODO free str?
+            } else {
+                // Numeric keys case
+                assert(key_size == sizeof(long) && "parse_collection_map key_size assert");
+                long key = StreamExtraction::extract<int>(datap);
+                add_index_zval(collection, key, value);
+            }
+            datap += value_size + 2 + key_size;
+        }
 
-	return collection;
+    return collection;
 }
 
 /** {{{ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr, unsigned long *len, int *caller_frees TSRMLS_DC)
@@ -558,35 +502,35 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
             if (H->preserve_values) {
                 lparam_type = PDO_CASSANDRA_TYPE_UTF8;
             } else {
-        	    lparam_type = pdo_cassandra_get_cassandra_type(S->result.get ()->schema.value_types [current_column]);
+                lparam_type = pdo_cassandra_get_cassandra_type(S->result.get ()->schema.value_types [current_column]);
             }
 
-			switch (lparam_type)
-				{
-				case PDO_CASSANDRA_TYPE_LIST:
-				case PDO_CASSANDRA_TYPE_SET:
-					{
-						// The return value of the parse collection must be the zval stuff
-						zval **ref = (zval **) emalloc(sizeof(zval));
-						*ref = parse_collection(S->result.get ()->schema.value_types [current_column], (*col_it).value);
-						*ptr = (char *)ref;
-						*len = sizeof(zval); //FIXME NOT SURE
-						*caller_frees = 1;
-						break;
-					}
+            switch (lparam_type)
+                {
+                case PDO_CASSANDRA_TYPE_LIST:
+                case PDO_CASSANDRA_TYPE_SET:
+                    {
+                        // The return value of the parse collection must be the zval stuff
+                        zval **ref = (zval **) emalloc(sizeof(zval));
+                        *ref = parse_collection(S->result.get ()->schema.value_types [current_column], (*col_it).value);
+                        *ptr = (char *)ref;
+                        *len = sizeof(zval);
+                        *caller_frees = 1;
+                        break;
+                    }
 
-				case PDO_CASSANDRA_TYPE_MAP:
-					{
-						// The return value of the parse collection must be the zval stuff
-						zval **ref = (zval **) emalloc(sizeof(*ref));
-						*ref = parse_collection_map(S->result.get ()->schema.value_types [current_column], (*col_it).value);
-						*ptr = (char *)ref;
-						*len = sizeof(zval); //FIXME NOT SURE
-						*caller_frees = 1;
-						break;
-					}
+                case PDO_CASSANDRA_TYPE_MAP:
+                    {
+                        // The return value of the parse collection must be the zval stuff
+                        zval **ref = (zval **) emalloc(sizeof(*ref));
+                        *ref = parse_collection_map(S->result.get ()->schema.value_types [current_column], (*col_it).value);
+                        *ptr = (char *)ref;
+                        *len = sizeof(zval);
+                        *caller_frees = 1;
+                        break;
+                    }
 
-				default:
+                default:
 
                     zval **ref = (zval **) emalloc(sizeof(*ref));
                     *ref = StreamExtraction::extract_zval(reinterpret_cast<const unsigned char*>((*col_it).value.c_str()),
@@ -596,7 +540,7 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
                     *len = sizeof(zval);
                     *caller_frees = 1;
                     break;
-				}
+                }
             return 1;
         }
     }
