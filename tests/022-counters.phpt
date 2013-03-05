@@ -10,8 +10,8 @@ $db = new PDO($dsn, $username, $password);
 
 pdo_cassandra_init ($db, $keyspace);
 
-$stmt = $db->query ("CREATE TABLE test_counter (my_key text PRIMARY KEY, count_me counter)
-                                          WITH comparator = ascii AND default_validation = counter;");
+$stmt = $db->query ("CREATE COLUMNFAMILY test_counter (my_key text PRIMARY KEY, count_me counter)");
+
 $data = $stmt->fetchAll (PDO::FETCH_ASSOC);
 
 $db->query("UPDATE test_counter SET count_me = count_me + 2 WHERE my_key = 'counter1'");
