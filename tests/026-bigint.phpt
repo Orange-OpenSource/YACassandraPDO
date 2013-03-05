@@ -19,24 +19,12 @@ $db->exec ("CREATE COLUMNFAMILY verylargeint_test (my_key text PRIMARY KEY, test
 $db->exec ("UPDATE verylargeint_test SET testval = 50000000000000000000000 WHERE my_key = 'aa'");
 $stmt = $db->query ("SELECT testval FROM verylargeint_test WHERE my_key = 'aa'");
 
-try {
-    $row = $stmt->fetch (PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    echo $e->getMessage() . PHP_EOL;
+$row = $stmt->fetch (PDO::FETCH_ASSOC);
 
-    $db->setAttribute(PDO::CASSANDRA_ATTR_PRESERVE_VALUES, true);
-
-    $stmt = $db->query ("SELECT testval FROM verylargeint_test WHERE my_key = 'aa'");
-    $row = $stmt->fetch (PDO::FETCH_ASSOC);
-
-    $g = gmp_init(bin2hex($row['testval']), 16);
-    echo gmp_strval ($g) . PHP_EOL;
-}
-
-pdo_cassandra_done ($db, $keyspace);
+$g = gmp_init(bin2hex($row['testval']), 16);
+echo gmp_strval ($g) . PHP_EOL;
 
 echo "OK";
 --EXPECT--
-CQLSTATE[22003] [10] The value is too large for integer datatype
 50000000000000000000000
 OK

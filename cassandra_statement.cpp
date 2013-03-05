@@ -219,7 +219,6 @@ static std::vector<pdo_cassandra_type> pdo_cassandra_get_element_type_in_collect
 static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &type)
 {
     std::string real_type;
-
     if (type.find("org.apache.cassandra.db.marshal.") != std::string::npos)
         real_type = type.substr(::strlen("org.apache.cassandra.db.marshal."));
     else
@@ -288,7 +287,6 @@ namespace StreamExtraction {
      */
     template <class T>
     zval *evaluate_integer_type(const unsigned char *binary, int size) {
-        //      assert(size == sizeof(T) && "evaluate_integer_type: size differs");
         zval *ret;
         MAKE_STD_ZVAL(ret);
         Z_TYPE_P(ret) = IS_LONG;
@@ -302,7 +300,6 @@ namespace StreamExtraction {
      */
     template <class T>
     zval *evaluate_float_type(const unsigned char *binary, int size) {
-        //      assert(size == sizeof(T) && "evaluate_float_type: size differs");
         zval *ret;
         MAKE_STD_ZVAL(ret);
         Z_TYPE_P(ret) = IS_DOUBLE;
@@ -323,7 +320,7 @@ namespace StreamExtraction {
                                                                  0, // LEXICAL
                                                                  0, // TIMEUUID
                                                                  evaluate_integer_type<bool>, // BOOLEAN
-                                                                 evaluate_integer_type<long>, // VARINT
+                                                                 evaluate_ascii, // VARINT
                                                                  evaluate_float_type<float>, // FLOAT
                                                                  evaluate_float_type<double>, // DOUBLE
                                                                  0, // SET

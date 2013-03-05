@@ -17,6 +17,7 @@ $result->closeCursor ();
 
 $result->execute ();
 var_dump($result->fetchAll (PDO::FETCH_GROUP));
+$result->closeCursor ();
 
 pdo_cassandra_done ($db, $keyspace);
 
