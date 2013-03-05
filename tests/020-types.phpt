@@ -31,25 +31,32 @@ $db->exec ("CREATE COLUMNFAMILY types_test(
 
 
 $stmt = $db->prepare ("INSERT INTO types_test(my_key, my_blob, my_ascii, my_text, my_varchar, my_uuid, my_varint, my_int, my_bigint)
-                                    VALUES   (:key,   :blob,   :ascii,   :text,   :varchar,   :uuid,   :varint,   :int,   :bigint)");
+                                    VALUES   (:key,   :blob,   :ascii,
+                                    :text,   :varchar, 5bafc990-ceb7-11e0-bd10-aa2e4924019b,
+                                    :varint,   :int,   :bigint)");
 
 $stmt->bindValue (':key', "hello key");
 $stmt->bindValue (':blob', "74686520616e73776572206973203432");
 $stmt->bindValue (':ascii', "hello ascii");
 $stmt->bindValue (':text', "what else than lorem ipsum? well, ∆∆∆");
 $stmt->bindValue (':varchar', "what else than more lorem ipsum?");
-$stmt->bindValue (':uuid', '5bafc990-ceb7-11e0-bd10-aa2e4924019b');
+//$stmt->bindValue (':uuid', '5bafc990-ceb7-11e0-bd10-aa2e4924019b', PDO::PARAM_????);
 $stmt->bindValue (':varint', 123, PDO::PARAM_INT);
 $stmt->bindValue (':int', 4567, PDO::PARAM_INT);
 $stmt->bindValue (':bigint', 891011, PDO::PARAM_INT);
 $stmt->execute ();
 
-$stmt = $db->query ("SELECT my_key, my_blob, my_ascii, my_text, my_varchar, my_uuid, my_varint, my_int, my_bigint FROM types_test");
+$stmt = $db->query ("SELECT my_key, my_blob, my_ascii, my_text, my_varchar, my_int, my_bigint FROM types_test");
 $data = $stmt->fetchAll ();
+var_dump ($data);
 
-$array = unpack('H*', $data [0]['my_uuid']);
+$stmt = $db->query ("SELECT my_uuid, my_varint FROM types_test");
+$data2 = $stmt->fetchAll ();
+$array = unpack('H*', $data2[0]['my_uuid']);
+$g = gmp_init(bin2hex($data2[0]['my_varint']), 16);
 
-var_dump ($data, $array);
+var_dump ($array);
+echo gmp_strval ($g) . PHP_EOL;
 
 pdo_cassandra_done ($db, $keyspace);
 
@@ -57,7 +64,7 @@ echo "OK";
 --EXPECTF--
 array(1) {
   [0]=>
-  array(18) {
+  array(14) {
     ["my_key"]=>
     string(9) "hello key"
     [0]=>
@@ -78,21 +85,13 @@ array(1) {
     string(32) "what else than more lorem ipsum?"
     [4]=>
     string(32) "what else than more lorem ipsum?"
-    ["my_uuid"]=>
-    string(16) "%s"
-    [5]=>
-    string(16) "%s"
-    ["my_varint"]=>
-    int(123)
-    [6]=>
-    int(123)
     ["my_int"]=>
     int(4567)
-    [7]=>
+    [5]=>
     int(4567)
     ["my_bigint"]=>
     int(891011)
-    [8]=>
+    [6]=>
     int(891011)
   }
 }
@@ -100,4 +99,5 @@ array(1) {
   [1]=>
   string(32) "5bafc990ceb711e0bd10aa2e4924019b"
 }
+123
 OK

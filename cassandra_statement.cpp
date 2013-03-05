@@ -238,6 +238,8 @@ static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &ty
         return PDO_CASSANDRA_TYPE_FLOAT;
     if (!real_type.compare("DoubleType"))
         return PDO_CASSANDRA_TYPE_DOUBLE;
+    if (!real_type.compare("UUIDType"))
+        return PDO_CASSANDRA_TYPE_UUID;
     if (!real_type.compare(0, 7, "SetType"))
         return PDO_CASSANDRA_TYPE_SET;
     if (!real_type.compare(0, 7, "MapType"))
@@ -316,7 +318,7 @@ namespace StreamExtraction {
                                                                  evaluate_ascii, // UTF8
                                                                  evaluate_integer_type<int>, // INTEGER
                                                                  evaluate_integer_type<long>, // LONG
-                                                                 0, // UUID
+                                                                 evaluate_ascii, // UUID -> returns the value without treatment
                                                                  0, // LEXICAL
                                                                  0, // TIMEUUID
                                                                  evaluate_integer_type<bool>, // BOOLEAN
