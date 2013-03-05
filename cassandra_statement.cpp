@@ -456,9 +456,8 @@ zval* parse_collection_map(const std::string &type, const std::string &data) {
             if (elt_types[0] == PDO_CASSANDRA_TYPE_ASCII ||
                 elt_types[0] == PDO_CASSANDRA_TYPE_UTF8) {
                 // String key case
-                char *str = new char[value_size + 1];
+                char *str = (char *)emalloc(sizeof(*str) * value_size);
                 memcpy(str, datap, value_size);
-                str[value_size] = 0;
                 add_assoc_zval(collection, str, value);
                 // TODO free str?
             } else {
