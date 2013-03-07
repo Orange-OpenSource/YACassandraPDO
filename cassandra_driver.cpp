@@ -475,15 +475,15 @@ static long pdo_cassandra_handle_execute(pdo_dbh_t *dbh, const char *sql, long s
 // Cassandra escape seems quite different than traditionnal DB
 // This escaper only doubles ' characters
 // Pretty dummy implementation, MUST be improved for further use
-static char *cassandra_escape(const char *to_escape, int to_escape_len, int *escaped_len)
+static char *cassandra_escape(const char *to_escape, int to_escape_len)
 {
     int len = to_escape_len;
-    *escaped_len = to_escape_len;
+    int escaped_len = to_escape_len;
     const char *current = to_escape;
     while (len--)
 	if (*current++ == '\'')
-	    ++(*escaped_len);
-    char *escaped = static_cast<char *>(emalloc(sizeof(*escaped) * (*escaped_len + 1)));
+	    ++escaped_len;
+    char *escaped = static_cast<char *>(emalloc(sizeof(*escaped) * (escaped_len + 1)));
     char *escaped_backup = escaped;
     len = to_escape_len;
     current = to_escape;
@@ -500,16 +500,34 @@ static char *cassandra_escape(const char *to_escape, int to_escape_len, int *esc
 */
 static int pdo_cassandra_handle_quote(pdo_dbh_t *dbh, const char *unquoted, int unquotedlen, char **quoted, int *quotedlen, enum pdo_param_type paramtype TSRMLS_DC)
 {
-    char *escaped;
-    int new_length;
-
-    escaped = cassandra_escape(unquoted, unquotedlen, &new_length);
-
-    if (!escaped) {
-        return 0;
+    switch (paramtype) {
+    case PDO_PARAM_BOOL: {
+        char *to_set;
+        if (!strcmp("true", unquoted) || !strcmp(unquoted, "1"))
+            to_set = "true";
+        else
+            to_set = "false";
+        *quotedlen = spprintf(quoted, 0, "%s", to_set);
+        break;
     }
-    *quotedlen = spprintf(quoted, 0, "'%s'", escaped);
-    efree(escaped);
+    case PDO_PARAM_INT: {
+        // Escaping is faster and easier (Floats, int, scientific notations...)
+        *quotedlen = spprintf(quoted, 0, "%s", cassandra_escape(unquoted, unquotedlen));
+        break;
+    }
+        // Other values that can be encountered:
+        // case PDO_PARAM_NULL:
+        // case PDO_PARAM_LOB:
+        // case PDO_PARAM_STMT:
+        // case PDO_PARAM_ZVAL:
+        // case PDO_PARAM_STR:
+    default: {
+        char *escaped = cassandra_escape(unquoted, unquotedlen);
+        *quotedlen = spprintf(quoted, 0, "'%s'", escaped);
+        efree(escaped);
+        break;
+    }
+    }
     return 1;
 }
 /* }}} */
