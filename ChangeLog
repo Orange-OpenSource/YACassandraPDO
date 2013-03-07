@@ -1,3 +1,6 @@
+0.3.1 
+ - Add support to cassandra 1.2.2 with 19.36 thrift interace
+
 0.3.0
 - Swittched to Cassandra 19.35 thrift interface
 - Added support to cql3 (via execute_cql3), compatible with Cassandra 1.2

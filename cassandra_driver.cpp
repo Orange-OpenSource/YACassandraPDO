@@ -291,11 +291,11 @@ static int pdo_cassandra_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSR
     try {
         H->transport->open();
 
+        php_cassandra_handle_auth (dbh, H);
+
         if ( ! H->active_keyspace.empty() ) {
             H->client->set_keyspace(H->active_keyspace);
         }
-
-        php_cassandra_handle_auth (dbh, H);
 
         if ( ! H->cql_version.empty() ) {
             H->client->set_cql_version(H->cql_version);
