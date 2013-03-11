@@ -1,24 +1,20 @@
-libcassandra-pdo-php5 (0~20120604-3hebex1) precise; urgency=low
+php-pdo-cassandra (0.1.0) lucid; urgency=low
 
-  * Fix authentification
+  * Fix Integer conversions error, bind parameters
 
- -- Florimond Roche <flroche.ext@orange.com>  Tue, 17 Jul 2012 10:21:15 +0200
+ -- Mathieu Lornac <mlornac.ext@orange.com>  Mon, 11 Mar 2013 17:52:57 +0200
 
-libcassandra-pdo-php5 (0~20120604-3) precise; urgency=low
+php-pdo-cassandra (0.1.0) lucid; urgency=low
 
-  * Changed Section to dbnosql/php.
+  * Changed Support of float, collections
 
- -- Marcos Dione <mdione.ext@orange.com>  Thu, 21 Jun 2012 17:52:57 +0200
+ -- Mathieu Lornac <mlornac.ext@orange.com>  Mon, 11 Mar 2013 17:52:57 +0200
 
-libcassandra-pdo-php5 (0~20120604-2) precise; urgency=low
+php-pdo-cassandra (0.1.0) lucid; urgency=low
 
   * Build-Depends pkg-config and libpcre3-dev.
-  * Re-release for precise.
+  * Re-release for lucid.
 
- -- Marcos Dione <mdione.ext@orange.com>  Thu, 21 Jun 2012 14:54:15 +0200
-
-libcassandra-pdo-php5 (0~20120604-1) unstable; urgency=low
-
+php-pdo-cassandra (0.1.0) lucid; urgency=low
   * Initial release.
-
- -- Marcos Dione <mdione.ext@orange.com>  Mon, 04 Jun 2012 14:14:35 +0200
+ -- Datastax base code
