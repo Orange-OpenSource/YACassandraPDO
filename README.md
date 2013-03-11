@@ -3,7 +3,7 @@
 Pretty much very experimental PDO driver for Cassandra CQL.
 
 This repository is a fork of: https://code.google.com/a/apache-extras.org/p/cassandra-pdo/
-We cloned it on GitHub because the original project seems dead. 
+We cloned it on GitHub because the original project seems dead.
 
 This version is developped for CQL3 target, we do not provide support for other versions of CQL.
 
@@ -38,6 +38,10 @@ pdo_cassandra ./configure script takes the following options:
 
  - --with-boost-dir[=DIR] can be used to specify 'non-standard' boost installation prefix.
 
+# Create a debian package from the sources
+
+- ln -s packaging/debian debian
+- dpkg-buildpackage -rfakeroot -us -uc
 
 # Running tests
 

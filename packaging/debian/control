@@ -1,0 +1,16 @@
+Source: libcassandra-pdo-php5
+Priority: extra
+Maintainer: Marcos Dione <mdione.ext@orange.com>
+Build-Depends: debhelper (>= 5), autotools-dev, php5-dev, libboost-dev, libthrift-dev, thrift-compiler, pkg-config, libpcre3-dev
+Standards-Version: 3.8.3
+
+Homepage: http://code.google.com/a/apache-extras.org/r/emmanuelcourreges-fixes/
+Package: libcassandra-pdo-php5
+Section: dbnosql/php
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${php:Depends}
+Description: PHP PDO connector for Apache Cassandra.
+ Cassandra is a distributed (peer-to-peer) system for the management
+ and storage of structured data.
+ .
+ This package contains the unnoficial PDO connector for PHP.
