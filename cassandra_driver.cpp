@@ -511,8 +511,10 @@ static int pdo_cassandra_handle_quote(pdo_dbh_t *dbh, const char *unquoted, int 
         break;
     }
     case PDO_PARAM_INT: {
-        // Escaping is faster and easier (Floats, int, scientific notations...)
-        *quotedlen = spprintf(quoted, 0, "%s", cassandra_escape(unquoted, unquotedlen));
+        // Escaping is faster and easier (Floats, int, scientific notations to handle otherwise...)
+        char *escaped = cassandra_escape(unquoted, unquotedlen);
+        *quotedlen = spprintf(quoted, 0, "%s", escaped);
+        efree(escaped);
         break;
     }
         // Other values that can be encountered:
