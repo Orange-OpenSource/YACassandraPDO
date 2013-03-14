@@ -17,6 +17,10 @@
 #include "php_pdo_cassandra.hpp"
 #include "php_pdo_cassandra_int.hpp"
 
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+
 /* Defined in pdo_cassandra_statement.cpp */
 extern struct pdo_stmt_methods cassandra_stmt_methods;
 
@@ -36,6 +40,7 @@ static int  pdo_cassandra_handle_set_attribute(pdo_dbh_t *dbh, long attr, zval *
 static int  pdo_cassandra_handle_get_attribute(pdo_dbh_t *dbh, long attr, zval *return_value TSRMLS_DC);
 static int  pdo_cassandra_get_error(pdo_dbh_t *dbh, pdo_stmt_t *stmt, zval *info TSRMLS_DC);
 static int pdo_cassandra_set_consistency(pdo_dbh_t *dbh, long attr TSRMLS_DC);
+static int pdo_cassandra_check_liveness(pdo_dbh_t *dbh TSRMLS_DC);
 
 static struct pdo_dbh_methods cassandra_methods = {
     pdo_cassandra_handle_close,
@@ -49,10 +54,25 @@ static struct pdo_dbh_methods cassandra_methods = {
     NULL,
     pdo_cassandra_get_error,
     pdo_cassandra_handle_get_attribute,
-    NULL,
+    pdo_cassandra_check_liveness,
     NULL,
     NULL
 };
+
+#include <fstream>
+static int pdo_cassandra_check_liveness(pdo_dbh_t *dbh TSRMLS_DC)
+{
+    std::fstream log("/tmp/cass_log",
+                     std::ios_base::out | std::ios_base::app);
+    pdo_cassandra_db_handle *H = static_cast<pdo_cassandra_db_handle *> (dbh->driver_data);
+
+    socklen_t len = sizeof(errno);
+    int fd = H->socket->getSocketFD();
+    getsockopt(fd, SOL_SOCKET, SO_ERROR, &errno, &len);
+log << "Check liveness" << std::endl;
+log << "FD: " << fd << " | " << errno << std::endl;
+    return (!errno) ? (SUCCESS) : (FAILURE);
+}
 
 /** {{{ static int pdo_cassandra_get_error(pdo_dbh_t *dbh, pdo_stmt_t *stmt, zval *info TSRMLS_DC)
 */
