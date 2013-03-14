@@ -59,19 +59,16 @@ static struct pdo_dbh_methods cassandra_methods = {
     NULL
 };
 
-#include <fstream>
 static int pdo_cassandra_check_liveness(pdo_dbh_t *dbh TSRMLS_DC)
 {
-    std::fstream log("/tmp/cass_log",
-                     std::ios_base::out | std::ios_base::app);
     pdo_cassandra_db_handle *H = static_cast<pdo_cassandra_db_handle *> (dbh->driver_data);
 
-    socklen_t len = sizeof(errno);
     int fd = H->socket->getSocketFD();
-    getsockopt(fd, SOL_SOCKET, SO_ERROR, &errno, &len);
-log << "Check liveness" << std::endl;
-log << "FD: " << fd << " | " << errno << std::endl;
-    return (!errno) ? (SUCCESS) : (FAILURE);
+    struct tcp_info tcpi;
+    socklen_t len = sizeof(tcpi);
+    if (-1 == getsockopt(fd, SOL_TCP, TCP_INFO, &tcpi, &len))
+        return FAILURE;
+    return tcpi.tcpi_state == TCP_ESTABLISHED ? SUCCESS : FAILURE;
 }
 
 /** {{{ static int pdo_cassandra_get_error(pdo_dbh_t *dbh, pdo_stmt_t *stmt, zval *info TSRMLS_DC)
