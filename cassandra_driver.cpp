@@ -18,6 +18,7 @@
 #include "php_pdo_cassandra_int.hpp"
 
 #include <errno.h>
+#include <netinet/tcp.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 
