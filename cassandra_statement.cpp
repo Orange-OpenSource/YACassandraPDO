@@ -142,15 +142,7 @@ static zend_bool pdo_cassandra_add_column(pdo_stmt_t *stmt, const std::string &n
     } catch (std::out_of_range &ex) {
         S->original_column_names.insert(ColumnMap::value_type(name, order));
 
-        pdo_param_type name_type;
-        name_type = PDO_PARAM_ZVAL;
-        if (name_type == PDO_PARAM_INT && name.size() <= 8) {
-            char label[96];
-            size_t len;
-            long namel = pdo_cassandra_marshal_numeric<long>(stmt, name);
-            len = snprintf(label, 96, "%ld", namel);
-            S->column_name_labels.insert(ColumnMap::value_type(std::string(label, len), order));
-        }
+        pdo_param_type name_type = PDO_PARAM_ZVAL;
         return 1;
     }
 }
@@ -582,9 +574,17 @@ static int pdo_cassandra_stmt_get_column_meta(pdo_stmt_t *stmt, long colno, zval
                       H->active_columnfamily.size(),
                       1);
 
-    bool found = false;
+    add_assoc_string(return_value,
+                     "native_type",
+                     const_cast <char *>(S->result.get()->schema.value_types[current_column].c_str()),
+                     1);
+
+#if 0
+// This code is not fonctionnal. However I kept it because this is how this feature should be implemented
+bool found = false;
     for (std::vector<CfDef>::iterator cfdef_it = H->description.cf_defs.begin(); cfdef_it < H->description.cf_defs.end(); cfdef_it++) {
         for (std::vector<ColumnDef>::iterator columndef_it = (*cfdef_it).column_metadata.begin(); columndef_it < (*cfdef_it).column_metadata.end(); columndef_it++) {
+
 
             // Only interested in the currently active CF
             if ((*cfdef_it).name.compare(H->active_columnfamily)) {
@@ -630,13 +630,13 @@ static int pdo_cassandra_stmt_get_column_meta(pdo_stmt_t *stmt, long colno, zval
             }
         }
     }
-
     if (!found) {
         add_assoc_string(return_value,
                          "native_type",
                          "unknown",
                          1);
     }
+#endif
     return SUCCESS;
 }
 /* }}} */
