@@ -23,9 +23,10 @@ function inject($db, $keys) {
 };
 
 // Regular test
- $chains  = array('I am an ascii chain',
-		  '^^ \\',
-		  'Good\'Morning\'\'England!!');
+$chains  = array('four',
+                 'I am an ascii chain',
+                 '^^ \\',
+                 'Good\'Morning\'\'England!!');
 
 
 foreach($chains as $chain) {

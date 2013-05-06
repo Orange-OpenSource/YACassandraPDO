@@ -265,7 +265,22 @@ namespace StreamExtraction {
     /**
      * Evaluator: Ascii extraction
      */
-    zval *evaluate_ascii(const unsigned char *binary, int size) {
+    zval *evaluate_string(const unsigned char *binary, int size) {
+        zval *ret;
+        MAKE_STD_ZVAL(ret);
+        Z_TYPE_P(ret) = IS_STRING;
+        char *str = (char *) emalloc(sizeof(*str) * (size + 1));
+        memcpy(str, binary, size);
+        str[size] = 0;
+        Z_STRVAL_P(ret) = str;
+        Z_STRLEN_P(ret) = size;
+        return ret;
+    }
+
+    /**
+     * Evaluator: Binary to char *
+     */
+    zval *evaluate_bytes_to_zval(const unsigned char *binary, int size) {
         zval *ret;
         MAKE_STD_ZVAL(ret);
         Z_TYPE_P(ret) = IS_STRING;
@@ -306,15 +321,15 @@ namespace StreamExtraction {
      * Pointers on evaluators indexed by the pdo type
      */
     EvaluatorType evaluations[PDO_CASSANDRA_TYPE_UNKNOWN + 1] = {0, // BYTES
-                                                                 evaluate_ascii, // ASCII
-                                                                 evaluate_ascii, // UTF8
+                                                                 evaluate_string, // ASCII
+                                                                 evaluate_string, // UTF8
                                                                  evaluate_integer_type<int>, // INTEGER
                                                                  evaluate_integer_type<long>, // LONG
-                                                                 evaluate_ascii, // UUID -> returns the value without treatment
+                                                                 evaluate_bytes_to_zval, // UUID -> returns the value without treatment
                                                                  0, // LEXICAL
                                                                  0, // TIMEUUID
                                                                  evaluate_integer_type<bool>, // BOOLEAN
-                                                                 evaluate_ascii, // VARINT
+                                                                 evaluate_bytes_to_zval, // VARINT
                                                                  evaluate_float_type<float>, // FLOAT
                                                                  evaluate_float_type<double>, // DOUBLE
                                                                  0, // SET
