@@ -38,6 +38,7 @@ pdo_cassandra_done($db, $keyspace);
 ?>
 
 --EXPECT--
+string(4) "four"
 string(19) "I am an ascii chain"
 string(4) "^^ \"
 string(23) "Good'Morning''England!!"
