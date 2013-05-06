@@ -1,6 +1,12 @@
+php-pdo-cassandra (0.4.2) lucid; urgency=low
+
+  * Fix Null string terminated issue
+
+ -- Mathieu Lornac <mlornac.ext@orange.com>  Mon May  6 15:06:59 2013
+
 php-pdo-cassandra (0.4.1) lucid; urgency=low
 
-  * Updated debian/ 
+  * Updated debian/
 
  -- Sandro Lex <sandro.lex.@orange.com>  Fri, 05 Apr 2013 17:52:57 +0200
 
