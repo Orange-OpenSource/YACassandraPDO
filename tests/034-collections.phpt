@@ -24,7 +24,7 @@ $db->exec ("CREATE COLUMNFAMILY cf (my_key int PRIMARY KEY,
 
 // Map varchar int test
 $db->exec("INSERT INTO cf (my_key, map_test_vc_int)
-		VALUES (400, {'key1': 1, 'key2': 2, 'key3': 3});");
+		VALUES (400, {'key_1': 1, 'key_2': 2, 'looong_key_here': 3});");
 print_r($db->query('SELECT map_test_vc_int FROM cf WHERE my_key=400;')->fetchObject());
 
 
@@ -51,9 +51,9 @@ stdClass Object
 (
     [map_test_vc_int] => Array
         (
-            [key1] => 1
-            [key2] => 2
-            [key3] => 3
+            [key_1] => 1
+            [key_2] => 2
+            [looong_key_here] => 3
         )
 
 )
