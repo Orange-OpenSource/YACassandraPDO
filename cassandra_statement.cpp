@@ -226,6 +226,8 @@ static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &ty
         return PDO_CASSANDRA_TYPE_LONG;
     if (!real_type.compare("BooleanType"))
         return PDO_CASSANDRA_TYPE_BOOLEAN;
+    if (!real_type.compare("DecimalType"))
+        return PDO_CASSANDRA_TYPE_DECIMAL;
     if (!real_type.compare("FloatType"))
         return PDO_CASSANDRA_TYPE_FLOAT;
     if (!real_type.compare("DoubleType"))
@@ -245,14 +247,20 @@ static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &ty
 namespace StreamExtraction {
 
     /**
+     * Creates a zval reading bina
+     */
+    zval* extract_zval(const unsigned char *binary, pdo_cassandra_type type, int size);
+
+
+    /**
      * Read n bytes to a primitive type
      */
     template <class T>
-    T extract(const unsigned char *bytes)
+    T extract(const unsigned char *bytes, unsigned int stream_size = sizeof(T))
     {
         T val = T();
-        unsigned char *pval = reinterpret_cast<unsigned char *>(&val) + sizeof(val);
-        for (size_t i = 0; i < sizeof(T); i++) {
+        unsigned char *pval = reinterpret_cast<unsigned char *>(&val) + stream_size;
+        for (size_t i = 0; i < stream_size; i++) {
         --pval;
         *pval = bytes[i];
         }
@@ -295,12 +303,41 @@ namespace StreamExtraction {
      * Evaluator: integer and long extractions
      */
     template <class T>
-    zval *evaluate_integer_type(const unsigned char *binary, int size) {
+    zval *evaluate_integer_type(const unsigned char *binary, int stream_size = sizeof(T)) {
         zval *ret;
         MAKE_STD_ZVAL(ret);
         Z_TYPE_P(ret) = IS_LONG;
         Z_LVAL_P(ret) = 0L;
-        Z_LVAL_P(ret) = StreamExtraction::extract<T>(binary);
+        Z_LVAL_P(ret) = StreamExtraction::extract<T>(binary, stream_size);
+        return ret;
+    }
+
+    /**
+     * Decimal number extraction
+     * Php lacks such a type therefore we return an array containing the unscaled value and the scale
+     */
+    zval *evaluate_decimal_type(const unsigned char *binary, int size) {
+        zval *ret;
+        MAKE_STD_ZVAL(ret);
+        array_init(ret);
+        // Scale extraction
+        zval *scale = extract_zval(binary, PDO_CASSANDRA_TYPE_INTEGER, sizeof(int));
+        add_next_index_zval(ret, scale);
+
+        // Unscaled value extraction
+        zval *unscaled_value;
+        int unscaled_val_size = size - sizeof(int);
+        do {
+            if (unscaled_val_size  <= (int) sizeof(int)) {
+                unscaled_value = evaluate_integer_type<int>(binary + sizeof(int), unscaled_val_size);
+                unscaled_val_size -= 4;
+            }
+            else {
+                unscaled_value = evaluate_integer_type<long>(binary + sizeof(int), unscaled_val_size);
+                unscaled_val_size -= 8;
+            }
+            add_next_index_zval(ret, unscaled_value);
+        } while (unscaled_val_size > 0);
         return ret;
     }
 
@@ -325,6 +362,7 @@ namespace StreamExtraction {
                                                                  evaluate_string, // UTF8
                                                                  evaluate_integer_type<int>, // INTEGER
                                                                  evaluate_integer_type<long>, // LONG
+                                                                 evaluate_decimal_type, // DECIMAL
                                                                  evaluate_bytes_to_zval, // UUID -> returns the value without treatment
                                                                  0, // LEXICAL
                                                                  0, // TIMEUUID

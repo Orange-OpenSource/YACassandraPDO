@@ -23,12 +23,55 @@ $db->exec ("CREATE COLUMNFAMILY test (my_key text PRIMARY KEY,
 					)");
 
 $stmt = $db->prepare ("UPDATE test SET my_decimal=:my_decimal WHERE my_key=:key");
+
 // Positive value insertion
-$stmt->bindValue (':my_decimal', "252154689.000", PDO::PARAM_INT);
+$stmt->bindValue (':my_decimal', "2524.1234", PDO::PARAM_INT);
 $stmt->bindValue (':key', 'aa', PDO::PARAM_STR);
 $stmt->execute ();
 
-$stmt = $db->query ("SELECT my_decimal FROM test WHERE my_key='aa'");
-var_dump ($stmt->fetchAll ());
+$stmt->bindValue (':my_decimal', "128.123456789", PDO::PARAM_INT);
+$stmt->bindValue (':key', 'bb', PDO::PARAM_STR);
+$stmt->execute ();
+
+$stmt->bindValue (':my_decimal', "0", PDO::PARAM_INT);
+$stmt->bindValue (':key', 'cc', PDO::PARAM_STR);
+$stmt->execute ();
+
+$stmt->bindValue (':my_decimal', "16.1616161616161616", PDO::PARAM_INT);
+$stmt->bindValue (':key', 'dd', PDO::PARAM_STR);
+$stmt->execute ();
+
+$stmt->bindValue (':my_decimal', "1234567890.123456789", PDO::PARAM_INT);
+$stmt->bindValue (':key', 'ee', PDO::PARAM_STR);
+$stmt->execute ();
+
+$stmt->bindValue (':my_decimal', "112233445566778899.112233445566778899", PDO::PARAM_INT);
+$stmt->bindValue (':key', 'ff', PDO::PARAM_STR);
+$stmt->execute ();
+
+$stmt2 = $db->query ("SELECT my_decimal FROM test WHERE my_key='aa'");
+$res = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+print_r($res[0]);
+
+$stmt2 = $db->query ("SELECT my_decimal FROM test WHERE my_key='bb'");
+$res = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+print_r($res[0]);
+
+$stmt2 = $db->query ("SELECT my_decimal FROM test WHERE my_key='cc'");
+$res = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+print_r($res[0]);
+
+$stmt2 = $db->query ("SELECT my_decimal FROM test WHERE my_key='dd'");
+$res = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+print_r($res[0]);
+
+$stmt2 = $db->query ("SELECT my_decimal FROM test WHERE my_key='ee'");
+$res = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+print_r($res[0]);
+
+$stmt2 = $db->query ("SELECT my_decimal FROM test WHERE my_key='ff'");
+$res = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+print_r($res[0]);
+
 
 --EXPECT--
