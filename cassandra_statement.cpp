@@ -328,12 +328,13 @@ namespace StreamExtraction {
         zval *unscaled_value;
         int unscaled_val_size = size - sizeof(int);
         do {
+            int natural_unscaled_val_size = ((unscaled_val_size > 0) ? unscaled_val_size : 0);
             if (unscaled_val_size  <= (int) sizeof(int)) {
-                unscaled_value = evaluate_integer_type<int>(binary + sizeof(int), unscaled_val_size);
+                unscaled_value = evaluate_integer_type<int>(binary + sizeof(int), natural_unscaled_val_size);
                 unscaled_val_size -= 4;
             }
             else {
-                unscaled_value = evaluate_integer_type<long>(binary + sizeof(int), unscaled_val_size);
+                unscaled_value = evaluate_integer_type<long>(binary + sizeof(int), natural_unscaled_val_size);
                 unscaled_val_size -= 8;
             }
             add_next_index_zval(ret, unscaled_value);
