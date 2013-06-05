@@ -141,8 +141,6 @@ static zend_bool pdo_cassandra_add_column(pdo_stmt_t *stmt, const std::string &n
         return 0;
     } catch (std::out_of_range &ex) {
         S->original_column_names.insert(ColumnMap::value_type(name, order));
-
-        pdo_param_type name_type = PDO_PARAM_ZVAL;
         return 1;
     }
 }
