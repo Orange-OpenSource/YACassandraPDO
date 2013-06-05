@@ -1,5 +1,20 @@
-0.3.1 
- - Add support to cassandra 1.2.2 with 19.36 thrift interace
+0.4.3
+- Added support for the decimal type
+- BugFix on collections, keys were truncated to 4 bytes
+
+0.4.2
+- BugFix Strings were not null terminated and needed to be
+
+0.4.1
+- Creation of the packaging system for debian
+
+0.4.0
+- Fix Integer conversions errors
+- Adding escaping primitives
+- Support of the binding feature for most of the types
+
+0.3.1
+- Add support to cassandra 1.2.2 with 19.36 thrift interace
 
 0.3.0
 - Swittched to Cassandra 19.35 thrift interface
