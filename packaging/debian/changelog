@@ -1,8 +1,15 @@
+php-pdo-cassandra (0.4.3) precise; urgency=low
+
+  * Upgrade Added support of Decimals
+  * Fix bug on collections (Keys truncated to a fixed len)
+
+ -- Mathieu Lornac <mlornac.ext@orange.com>  Wed, 05 Jun 2013 08:30:16 +0200
+
 php-pdo-cassandra (0.4.2) precise; urgency=low
 
   * Fix Null terminated string fix
 
- -- mlornac <mlornac.ext@orange.com>  Mon, 06 May 2013 15:30:16 +0200
+ -- Mathieu Lornac <mlornac.ext@orange.com>  Mon, 06 May 2013 15:30:16 +0200
 
 php-pdo-cassandra (0.4.1) lucid; urgency=low
 
