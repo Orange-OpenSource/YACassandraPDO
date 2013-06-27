@@ -293,13 +293,10 @@ namespace StreamExtraction {
         return x < 10 ? x + '0' : (x - 10) + 'a';
     }
     
-    zval *evaluate_uuid(const unsigned char *binary, int size) {
+    char *raw_uuid_to_str(const unsigned char *binary, int size) {
         
         int size_str = size * 2 + 4;
         
-        zval *ret;
-        MAKE_STD_ZVAL(ret);
-        Z_TYPE_P(ret) = IS_STRING;
         char *str = (char *) emalloc(sizeof(*str) * (size_str + 1));
         
         int writepos = 0;
@@ -315,8 +312,19 @@ namespace StreamExtraction {
         }
         
         str[size_str] = 0;
+		return str;
+    }
+    
+    zval *evaluate_uuid(const unsigned char *binary, int size) {
+        
+        zval *ret;
+        MAKE_STD_ZVAL(ret);
+        Z_TYPE_P(ret) = IS_STRING;
+
+		char *str = StreamExtraction::raw_uuid_to_str(binary, size);
+
         Z_STRVAL_P(ret) = str;
-        Z_STRLEN_P(ret) = size_str;
+        Z_STRLEN_P(ret) = strlen(str);
         return ret;
     }
 
@@ -543,6 +551,15 @@ zval* parse_collection_map(const std::string &type, const std::string &data) {
                 memcpy(str, datap, key_size + 1);
                 str[key_size] = 0;
                 add_assoc_zval(collection, str, value);
+			}
+			else if (elt_types[0] == PDO_CASSANDRA_TYPE_UUID ||
+                elt_types[0] == PDO_CASSANDRA_TYPE_TIMEUUID) {
+
+                // UUID key case, for now it gets no special treatment
+                unsigned char *raw_uuid = (unsigned char *) emalloc(sizeof(*raw_uuid) * key_size);
+                memcpy(raw_uuid, datap, key_size);
+				char *str_uuid = StreamExtraction::raw_uuid_to_str(raw_uuid, key_size);
+                add_assoc_zval(collection, str_uuid, value);
             } else {
                 // Numeric keys case
                 assert(key_size == sizeof(long) && "parse_collection_map key_size assert");
