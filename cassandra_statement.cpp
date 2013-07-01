@@ -232,6 +232,8 @@ static pdo_cassandra_type pdo_cassandra_get_cassandra_type(const std::string &ty
         return PDO_CASSANDRA_TYPE_DOUBLE;
     if (!real_type.compare("UUIDType"))
         return PDO_CASSANDRA_TYPE_UUID;
+    if (!real_type.compare("TimeUUIDType"))
+        return PDO_CASSANDRA_TYPE_TIMEUUID;
     if (!real_type.compare(0, 7, "SetType"))
         return PDO_CASSANDRA_TYPE_SET;
     if (!real_type.compare(0, 7, "MapType"))
@@ -280,6 +282,49 @@ namespace StreamExtraction {
         str[size] = 0;
         Z_STRVAL_P(ret) = str;
         Z_STRLEN_P(ret) = size;
+        return ret;
+    }
+    
+    /**
+     * Evaluator: UUID extraction
+     */
+    char to_hex(int x)
+    {
+        return x < 10 ? x + '0' : (x - 10) + 'a';
+    }
+    
+    char *raw_uuid_to_str(const unsigned char *binary, int size) {
+        
+        int size_str = size * 2 + 4;
+        
+        char *str = (char *) emalloc(sizeof(*str) * (size_str + 1));
+        
+        int writepos = 0;
+        int readpos = 0;
+        for (int i = 0; i < size + 4; ++i) {
+            if (i == 4 || i == 7 || i == 10 || i == 13) {
+                str[writepos++] = '-';
+            } else {
+                str[writepos++] = to_hex((binary[readpos] >> 4) & 0x0F);
+                str[writepos++] = to_hex(binary[readpos] & 0x0F);
+                ++readpos;
+            }
+        }
+        
+        str[size_str] = 0;
+		return str;
+    }
+    
+    zval *evaluate_uuid(const unsigned char *binary, int size) {
+        
+        zval *ret;
+        MAKE_STD_ZVAL(ret);
+        Z_TYPE_P(ret) = IS_STRING;
+
+		char *str = StreamExtraction::raw_uuid_to_str(binary, size);
+
+        Z_STRVAL_P(ret) = str;
+        Z_STRLEN_P(ret) = strlen(str);
         return ret;
     }
 
@@ -362,9 +407,9 @@ namespace StreamExtraction {
                                                                  evaluate_integer_type<int>, // INTEGER
                                                                  evaluate_integer_type<long>, // LONG
                                                                  evaluate_decimal_type, // DECIMAL
-                                                                 evaluate_bytes_to_zval, // UUID -> returns the value without treatment
+                                                                 evaluate_uuid, // UUID
                                                                  0, // LEXICAL
-                                                                 0, // TIMEUUID
+                                                                 evaluate_uuid, // TIMEUUID
                                                                  evaluate_integer_type<bool>, // BOOLEAN
                                                                  evaluate_bytes_to_zval, // VARINT
                                                                  evaluate_float_type<float>, // FLOAT
@@ -502,10 +547,19 @@ zval* parse_collection_map(const std::string &type, const std::string &data) {
             if (elt_types[0] == PDO_CASSANDRA_TYPE_ASCII ||
                 elt_types[0] == PDO_CASSANDRA_TYPE_UTF8) {
                 // String key case
-                char *str = (char *)emalloc(sizeof(*str) * key_size);
+                char *str = (char *) emalloc(sizeof(*str) * (key_size + 1));
                 memcpy(str, datap, key_size + 1);
                 str[key_size] = 0;
                 add_assoc_zval(collection, str, value);
+			}
+			else if (elt_types[0] == PDO_CASSANDRA_TYPE_UUID ||
+                elt_types[0] == PDO_CASSANDRA_TYPE_TIMEUUID) {
+
+                // UUID key case, for now it gets no special treatment
+                unsigned char *raw_uuid = (unsigned char *) emalloc(sizeof(*raw_uuid) * key_size);
+                memcpy(raw_uuid, datap, key_size);
+				char *str_uuid = StreamExtraction::raw_uuid_to_str(raw_uuid, key_size);
+                add_assoc_zval(collection, str_uuid, value);
             } else {
                 // Numeric keys case
                 assert(key_size == sizeof(long) && "parse_collection_map key_size assert");
