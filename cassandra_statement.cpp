@@ -284,7 +284,7 @@ namespace StreamExtraction {
         Z_STRLEN_P(ret) = size;
         return ret;
     }
-    
+
     /**
      * Evaluator: UUID extraction
      */
@@ -292,13 +292,13 @@ namespace StreamExtraction {
     {
         return x < 10 ? x + '0' : (x - 10) + 'a';
     }
-    
+
     char *raw_uuid_to_str(const unsigned char *binary, int size) {
-        
+
         int size_str = size * 2 + 4;
-        
+
         char *str = (char *) emalloc(sizeof(*str) * (size_str + 1));
-        
+
         int writepos = 0;
         int readpos = 0;
         for (int i = 0; i < size + 4; ++i) {
@@ -310,13 +310,13 @@ namespace StreamExtraction {
                 ++readpos;
             }
         }
-        
+
         str[size_str] = 0;
 		return str;
     }
-    
+
     zval *evaluate_uuid(const unsigned char *binary, int size) {
-        
+
         zval *ret;
         MAKE_STD_ZVAL(ret);
         Z_TYPE_P(ret) = IS_STRING;
@@ -548,7 +548,7 @@ zval* parse_collection_map(const std::string &type, const std::string &data) {
                 elt_types[0] == PDO_CASSANDRA_TYPE_UTF8) {
                 // String key case
                 char *str = (char *) emalloc(sizeof(*str) * (key_size + 1));
-                memcpy(str, datap, key_size + 1);
+                memcpy(str, datap, key_size);
                 str[key_size] = 0;
                 add_assoc_zval(collection, str, value);
 			}
