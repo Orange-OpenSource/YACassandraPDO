@@ -355,6 +355,17 @@ namespace StreamExtraction {
         return ret;
     }
 
+    template <>
+    zval *evaluate_integer_type<bool>(const unsigned char *binary, int stream_size) {
+        zval *ret;
+        MAKE_STD_ZVAL(ret);
+        Z_TYPE_P(ret) = IS_BOOL;
+        Z_LVAL_P(ret) = 0L;
+        Z_LVAL_P(ret) = StreamExtraction::extract<bool>(binary, sizeof(bool));
+        return ret;
+    }
+
+
     /**
      * Decimal number extraction
      * Php lacks such a type therefore we return an array containing the unscaled value and the scale

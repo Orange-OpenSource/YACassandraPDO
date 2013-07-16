@@ -521,10 +521,10 @@ static int pdo_cassandra_handle_quote(pdo_dbh_t *dbh, const char *unquoted, int 
     switch (paramtype) {
     case PDO_PARAM_BOOL: {
         char *to_set;
-        if (!strcmp("true", unquoted) || !strcmp(unquoted, "1"))
-            to_set = "true";
-        else
+        if (!strcmp(unquoted, "0") || !strcasecmp(unquoted, "false"))
             to_set = "false";
+        else
+            to_set = "true";
         *quotedlen = spprintf(quoted, 0, "%s", to_set);
         break;
     }
