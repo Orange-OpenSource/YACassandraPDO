@@ -47,9 +47,9 @@ extern "C" {
 #undef HAVE_ZLIB
 
 #include "gen-cpp/Cassandra.h"
-#include <protocol/TBinaryProtocol.h>
-#include <transport/TSocketPool.h>
-#include <transport/TTransportUtils.h>
+#include <thrift/protocol/TBinaryProtocol.h>
+#include <thrift/transport/TSocketPool.h>
+#include <thrift/transport/TTransportUtils.h>
 
 #undef HAVE_ZLIB
 #define HAVE_ZLIB HAVE_ZLIB_CP
