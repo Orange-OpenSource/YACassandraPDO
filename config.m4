@@ -59,12 +59,37 @@ if test "x${PHP_PDO_CASSANDRA}" != "xno"; then
     INTERFACE_FILE="${PHP_PDO_CASSANDRA}"
   fi
 
+  AC_MSG_CHECKING([for Thrift ouput])
+  if test -d $abs_srcdir/ext/pdo_cassandra/; then
+    OUTPUT_THRIFT_PATH=$abs_srcdir/ext/pdo_cassandra/
+  else
+    OUTPUT_THRIFT_PATH=.
+  fi
+  AC_MSG_RESULT($OUTPUT_THRIFT_PATH)
+
   # Regenerate the cpp
-  "${THRIFT_BIN}" -o . -gen cpp "${INTERFACE_FILE}"
+  "${THRIFT_BIN}" -o ${OUTPUT_THRIFT_PATH} -gen cpp "${INTERFACE_FILE}"
   if test $? != 0; then
     AC_MSG_ERROR([failed to regenerate thrift interfaces])
   fi
-  
+
+  ifdef([PHP_CHECK_PDO_INCLUDES],
+  [
+    PHP_CHECK_PDO_INCLUDES
+  ],[
+  AC_MSG_CHECKING([for PDO includes])
+  if test -f $abs_srcdir/include/php/ext/pdo/php_pdo_driver.h; then
+    pdo_cv_inc_path=$abs_srcdir/ext
+  elif test -f $abs_srcdir/ext/pdo/php_pdo_driver.h; then
+    pdo_cv_inc_path=$abs_srcdir/ext
+  elif test -f $prefix/include/php/ext/pdo/php_pdo_driver.h; then
+    pdo_cv_inc_path=$prefix/include/php/ext
+  else
+    AC_MSG_ERROR([Cannot find php_pdo_driver.h.])
+  fi
+  AC_MSG_RESULT($pdo_cv_inc_path)
+  ])
+
   # Add boost includes
   AC_MSG_CHECKING([boost installation])
   if test "x${PHP_BOOST_DIR}" != "xyes" -a "x${PHP_BOOST_DIR}" != "xno"; then
@@ -87,6 +112,6 @@ if test "x${PHP_PDO_CASSANDRA}" != "xno"; then
   
   PHP_ADD_LIBRARY(stdc++, PDO_CASSANDRA_SHARED_LIBADD)
   PHP_SUBST(PDO_CASSANDRA_SHARED_LIBADD)
-  PHP_NEW_EXTENSION(pdo_cassandra, cassandra_driver.cpp cassandra_statement.cpp gen-cpp/Cassandra.cpp gen-cpp/cassandra_types.cpp, $ext_shared,,-Wall -Wno-write-strings)
+  PHP_NEW_EXTENSION(pdo_cassandra, cassandra_driver.cpp cassandra_statement.cpp gen-cpp/Cassandra.cpp gen-cpp/cassandra_types.cpp, $ext_shared,,-Wall -Wno-write-strings, -I$pdo_cv_inc_path)
 fi
 

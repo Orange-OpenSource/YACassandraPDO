@@ -20,6 +20,7 @@
 #define PHP_PDO_CASSANDRA_EXTNAME "pdo_cassandra"
 #define PHP_PDO_CASSANDRA_EXTVER "0.4.3"
 
+#ifdef __cplusplus
 extern "C" {
 #ifdef ZTS
 # include "TSRM.h"
@@ -27,8 +28,9 @@ extern "C" {
 
 #include "php.h"
 }
+#endif
 
-extern zend_module_entry cassandra_module_entry;
-#define phpext_cassandra_ptr &cassandra_module_entry
+extern zend_module_entry pdo_cassandra_module_entry;
+#define phpext_pdo_cassandra_ptr &pdo_cassandra_module_entry
 
 #endif /* _PHP_PDO_CASSANDRA_H_ */
