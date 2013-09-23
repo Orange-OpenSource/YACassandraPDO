@@ -8,9 +8,9 @@ PHP_ARG_WITH(boost-dir,    optional boost install prefix,
 [  --with-boost-dir[=DIR]  Optional path to boost installation.], no, no)
 
 if test "x${PHP_PDO_CASSANDRA}" != "xno"; then
-  
+
   PHP_REQUIRE_CXX()
-  
+
   if test "x${PHP_PDO}" = "xno" && test "x${ext_shared}" = "xno"; then
     AC_MSG_ERROR([PDO is not enabled. Add --enable-pdo to your configure line.])
   fi
@@ -33,7 +33,7 @@ if test "x${PHP_PDO_CASSANDRA}" != "xno"; then
   else
     export PKG_CONFIG_PATH="${PHP_THRIFT_DIR}:${PHP_THRIFT_DIR}/lib/pkgconfig"
   fi
-  
+
   if ${PKG_CONFIG} --exists thrift; then
     PHP_THRIFT_VERSION=`${PKG_CONFIG} thrift --modversion`
 
@@ -46,13 +46,13 @@ if test "x${PHP_PDO_CASSANDRA}" != "xno"; then
   else
     AC_MSG_ERROR(Unable to find thrift installation)
   fi
-  
+
   THRIFT_BIN=`${PKG_CONFIG} thrift --variable=prefix`"/bin/thrift"
 
   if test ! -x "${THRIFT_BIN}"; then
     AC_MSG_ERROR([${THRIFT_BIN} does not exist or is not executable])
   fi
-  
+
   if test "x${PHP_PDO_CASSANDRA}" = "xyes" -o "x${PHP_PDO_CASSANDRA}" = "xno"; then
     INTERFACE_FILE="interface/cassandra.thrift"
   else
@@ -73,22 +73,18 @@ if test "x${PHP_PDO_CASSANDRA}" != "xno"; then
     AC_MSG_ERROR([failed to regenerate thrift interfaces])
   fi
 
-  ifdef([PHP_CHECK_PDO_INCLUDES],
-  [
-    PHP_CHECK_PDO_INCLUDES
-  ],[
+  # PDO includes check
   AC_MSG_CHECKING([for PDO includes])
-  if test -f $abs_srcdir/include/php/ext/pdo/php_pdo_driver.h; then
-    pdo_cv_inc_path=$abs_srcdir/ext
-  elif test -f $abs_srcdir/ext/pdo/php_pdo_driver.h; then
+  if test -f $abs_srcdir/ext/pdo/php_pdo_driver.h; then
     pdo_cv_inc_path=$abs_srcdir/ext
   elif test -f $prefix/include/php/ext/pdo/php_pdo_driver.h; then
     pdo_cv_inc_path=$prefix/include/php/ext
+  elif test -f $prefix/include/php5/ext/pdo/php_pdo_driver.h; then
+    pdo_cv_inc_path=$prefix/include/php5/ext
   else
-    AC_MSG_ERROR([Cannot find php_pdo_driver.h.])
+    AC_MSG_ERROR([Cannot find php_pdo_driverkk.h])
   fi
   AC_MSG_RESULT($pdo_cv_inc_path)
-  ])
 
   # Add boost includes
   AC_MSG_CHECKING([boost installation])
@@ -106,10 +102,10 @@ if test "x${PHP_PDO_CASSANDRA}" != "xno"; then
   fi
   AC_MSG_RESULT([found in ${PHP_BOOST_DIR}])
   PHP_ADD_INCLUDE(${PHP_BOOST_DIR}/include)
-  
+
   PHP_ADD_EXTENSION_DEP(pdo_cassandra, pdo)
   PHP_ADD_EXTENSION_DEP(pdo_cassandra, pcre)
-  
+
   PHP_ADD_LIBRARY(stdc++, PDO_CASSANDRA_SHARED_LIBADD)
   PHP_SUBST(PDO_CASSANDRA_SHARED_LIBADD)
   PHP_NEW_EXTENSION(pdo_cassandra, cassandra_driver.cpp cassandra_statement.cpp gen-cpp/Cassandra.cpp gen-cpp/cassandra_types.cpp, $ext_shared,,-Wall -Wno-write-strings, -I$pdo_cv_inc_path)
