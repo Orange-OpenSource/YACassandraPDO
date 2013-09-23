@@ -32,14 +32,9 @@ $stmt->execute();
 
 $stmt = $db->prepare("SELECT my_uuid FROM test_uuid WHERE id=1;");
 $stmt->execute();
-$res = $stmt->fetch(PDO::FETCH_ASSOC);
+$res = $stmt->fetchAll();
 
-$uuid_ret = unpack('H*', $res['my_uuid']);
-print_r($uuid_ret);
-
+print_r($res[0]['my_uuid']);
 
 --EXPECT--
-Array
-(
-    [1] => 5bafc990ceb711e0bd10aa2e4924019b
-)
+5bafc990-ceb7-11e0-bd10-aa2e4924019b

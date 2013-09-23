@@ -1,3 +1,6 @@
+0.4.4
+- Fixed UUID test
+
 0.4.3
 - Added support for the decimal type
 - BugFix on collections, keys were truncated to 4 bytes

@@ -14,10 +14,10 @@ try {
     $db->exec ("DROP KEYSPACE {$keyspace}");
 } catch (PDOException $e) {}
 
-$db->exec ("CREATE KEYSPACE {$keyspace} with strategy_class = 'SimpleStrategy' and strategy_options:replication_factor=1;");
+$db->exec ("CREATE KEYSPACE {$keyspace}  WITH REPLICATION = {'CLASS' : 'SimpleStrategy', 'replication_factor': 1}");
 $db->exec ("USE {$keyspace}");
-$db->exec ("CREATE TABLE comparator_test (my_key text PRIMARY KEY)
-            WITH comparator = bigint AND default_validation = ascii;");
+$db->exec ("CREATE TABLE comparator_test (my_key text PRIMARY KEY);");
+//            WITH comparator = bigint AND default_validation = ascii;");
 
 $stmt = $db->prepare ("UPDATE comparator_test SET 10 = 'hello', 20 = 'hi there' WHERE my_key = 'aa'");
 $stmt->execute ();

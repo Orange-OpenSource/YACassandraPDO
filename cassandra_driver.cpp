@@ -130,7 +130,6 @@ void pdo_cassandra_error_ex(pdo_dbh_t *dbh TSRMLS_DC, pdo_cassandra_error code, 
 
     /* Set the correct CQLSTATE */
     pdo_cassandra_set_cqlstate(dbh->error_code, code);
-
     va_start(args, message);
     buffer_len = vsnprintf(buffer, sizeof(buffer), message, args);
     va_end(args);
@@ -456,14 +455,14 @@ static long pdo_cassandra_handle_execute(pdo_dbh_t *dbh, const char *sql, long s
         std::string query(sql);
 
         CqlResult result;
+
+        pdo_cassandra_set_active_keyspace(H, query TSRMLS_CC);
+        pdo_cassandra_set_active_columnfamily(H, query TSRMLS_CC);
         H->client->execute_cql3_query(result, query, (H->compression ? Compression::GZIP : Compression::NONE), H->consistency);
 
         if (result.type == CqlResultType::INT) {
             return result.num;
         }
-        pdo_cassandra_set_active_keyspace(H, query TSRMLS_CC);
-        pdo_cassandra_set_active_columnfamily(H, query TSRMLS_CC);
-
         return 0;
     } catch (NotFoundException &e) {
         pdo_cassandra_error(dbh, PDO_CASSANDRA_NOT_FOUND, "%s", e.what());
