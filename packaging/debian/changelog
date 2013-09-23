@@ -1,3 +1,9 @@
+php-pdo-cassandra (0.4.4) precise; urgency=low
+
+  * Fix tests
+
+ -- Mathieu Lornac <mlornac.ext@orange.com>  Wed, 05 Jun 2013 08:30:16 +0200
+
 php-pdo-cassandra (0.4.3) precise; urgency=low
 
   * Upgrade Added support of Decimals

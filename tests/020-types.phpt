@@ -52,10 +52,9 @@ var_dump ($data);
 
 $stmt = $db->query ("SELECT my_uuid, my_varint FROM types_test");
 $data2 = $stmt->fetchAll ();
-$array = unpack('H*', $data2[0]['my_uuid']);
 $g = gmp_init(bin2hex($data2[0]['my_varint']), 16);
 
-var_dump ($array);
+var_dump ($data2[0]['my_uuid']);
 echo gmp_strval ($g) . PHP_EOL;
 
 pdo_cassandra_done ($db, $keyspace);
@@ -95,9 +94,6 @@ array(1) {
     int(891011)
   }
 }
-array(1) {
-  [1]=>
-  string(32) "5bafc990ceb711e0bd10aa2e4924019b"
-}
+string(36) "5bafc990-ceb7-11e0-bd10-aa2e4924019b"
 123
 OK
