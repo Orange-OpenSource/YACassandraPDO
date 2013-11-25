@@ -17,6 +17,7 @@
 #include "php_pdo_cassandra.hpp"
 #include "php_pdo_cassandra_int.hpp"
 
+#include <boost/lexical_cast.hpp>
 #include <errno.h>
 #include <netinet/tcp.h>
 #include <sys/types.h>
@@ -518,7 +519,7 @@ static char *cassandra_escape(const char *to_escape, int to_escape_len)
 static int pdo_cassandra_handle_quote(pdo_dbh_t *dbh, const char *unquoted, int unquotedlen, char **quoted, int *quotedlen, enum pdo_param_type paramtype TSRMLS_DC)
 {
     switch (paramtype) {
-    case PDO_PARAM_BOOL: {
+    case PDO_CASSANDRA_TYPE_BOOLEAN: {
         char *to_set;
         if (!strcmp(unquoted, "0") || !strcasecmp(unquoted, "false"))
             to_set = "false";
@@ -527,20 +528,39 @@ static int pdo_cassandra_handle_quote(pdo_dbh_t *dbh, const char *unquoted, int 
         *quotedlen = spprintf(quoted, 0, "%s", to_set);
         break;
     }
-    case PDO_PARAM_INT: {
-        // Escaping is faster and easier (Floats, int, scientific notations to handle otherwise...)
-        char *escaped = cassandra_escape(unquoted, unquotedlen);
-        *quotedlen = spprintf(quoted, 0, "%s", escaped);
-        efree(escaped);
+    case PDO_CASSANDRA_TYPE_INTEGER: {
+        try {
+            boost::lexical_cast<long long int>(unquoted);
+            *quotedlen = spprintf(quoted, 0, "%s", unquoted);
+        }
+        catch(boost::bad_lexical_cast &) {
+            pdo_cassandra_error_exception(dbh,
+                                          PDO_CASSANDRA_GENERAL_ERROR,
+                                          "%s: %s", "Integer value incorrectly formatted", unquoted);
+            return 0;
+        }
         break;
     }
-        // Other values that can be encountered:
-        // case PDO_PARAM_NULL:
-        // case PDO_PARAM_LOB:
-        // case PDO_PARAM_STMT:
-        // case PDO_PARAM_ZVAL:
-        // case PDO_PARAM_STR:
+    case PDO_CASSANDRA_TYPE_FLOAT: {
+        try {
+            boost::lexical_cast<double>(unquoted);
+            *quotedlen = spprintf(quoted, 0, "%s", unquoted);
+        }
+        catch(boost::bad_lexical_cast &) {
+            pdo_cassandra_error_exception(dbh,
+                                          PDO_CASSANDRA_GENERAL_ERROR,
+                                          "%s: %s", "Float value incorrectly formatted", unquoted);
+            return 0;
+        }
+        break;
+    }
+    case PDO_CASSANDRA_TYPE_UUID: {
+        // TODO add check on type
+        *quotedlen = spprintf(quoted, 0, "%s", unquoted);
+        break;
+    }
     default: {
+        // PDO_CASSANDRA_TYPE_ASCII
         char *escaped = cassandra_escape(unquoted, unquotedlen);
         *quotedlen = spprintf(quoted, 0, "'%s'", escaped);
         efree(escaped);
@@ -786,6 +806,14 @@ PHP_MINIT_FUNCTION(pdo_cassandra)
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_CONSISTENCYLEVEL_ANY",          PDO_CASSANDRA_CONSISTENCYLEVEL_ANY);
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_CONSISTENCYLEVEL_TWO",          PDO_CASSANDRA_CONSISTENCYLEVEL_TWO);
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_CONSISTENCYLEVEL_THREE",          PDO_CASSANDRA_CONSISTENCYLEVEL_THREE);
+
+
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_INT", PDO_CASSANDRA_TYPE_INTEGER);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_FLOAT", PDO_CASSANDRA_TYPE_FLOAT);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_UUID", PDO_CASSANDRA_TYPE_UUID);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_BOOL", PDO_CASSANDRA_TYPE_BOOLEAN);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_COLLECTION", PDO_CASSANDRA_TYPE_SET);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_STR", PDO_CASSANDRA_TYPE_ASCII);
 
 
 

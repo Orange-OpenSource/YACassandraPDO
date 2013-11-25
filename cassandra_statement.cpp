@@ -16,6 +16,8 @@
 
 #include "php_pdo_cassandra.hpp"
 #include "php_pdo_cassandra_int.hpp"
+
+#include <map>
 #include <sstream>
 
 template <class T>
@@ -409,26 +411,37 @@ namespace StreamExtraction {
         return ret;
     }
 
-    /**
+
+
+        /**
      * Pointers on evaluators indexed by the pdo type
      */
-    EvaluatorType evaluations[PDO_CASSANDRA_TYPE_UNKNOWN + 1] = {0, // BYTES
-                                                                 evaluate_string, // ASCII
-                                                                 evaluate_string, // UTF8
-                                                                 evaluate_integer_type<int>, // INTEGER
-                                                                 evaluate_integer_type<long>, // LONG
-                                                                 evaluate_decimal_type, // DECIMAL
-                                                                 evaluate_uuid, // UUID
-                                                                 0, // LEXICAL
-                                                                 evaluate_uuid, // TIMEUUID
-                                                                 evaluate_integer_type<bool>, // BOOLEAN
-                                                                 evaluate_bytes_to_zval, // VARINT
-                                                                 evaluate_float_type<float>, // FLOAT
-                                                                 evaluate_float_type<double>, // DOUBLE
-                                                                 0, // SET
-                                                                 0, // MAP
-                                                                 0, // LIST
-                                                                 0};// UNKNOWN
+    static std::map<pdo_cassandra_type, EvaluatorType> m_evaluation_map;
+
+    static EvaluatorType evaluate(pdo_cassandra_type type) {
+        static bool init = false;
+        if (!init) {
+            m_evaluation_map[PDO_CASSANDRA_TYPE_BYTES]          = 0;
+            m_evaluation_map[PDO_CASSANDRA_TYPE_ASCII]          = evaluate_string;
+            m_evaluation_map[PDO_CASSANDRA_TYPE_UTF8]           = evaluate_string;
+            m_evaluation_map[PDO_CASSANDRA_TYPE_INTEGER]        = evaluate_integer_type<int>;
+            m_evaluation_map[PDO_CASSANDRA_TYPE_LONG]           = evaluate_integer_type<long>;
+            m_evaluation_map[PDO_CASSANDRA_TYPE_DECIMAL]        = evaluate_decimal_type;
+            m_evaluation_map[PDO_CASSANDRA_TYPE_UUID]           = evaluate_uuid;
+            m_evaluation_map[PDO_CASSANDRA_TYPE_LEXICAL]        = 0;
+            m_evaluation_map[PDO_CASSANDRA_TYPE_TIMEUUID]       = evaluate_uuid;
+            m_evaluation_map[PDO_CASSANDRA_TYPE_BOOLEAN]        = evaluate_integer_type<bool>;
+            m_evaluation_map[PDO_CASSANDRA_TYPE_VARINT]         = evaluate_bytes_to_zval;
+            m_evaluation_map[PDO_CASSANDRA_TYPE_FLOAT]          = evaluate_float_type<float>;
+            m_evaluation_map[PDO_CASSANDRA_TYPE_DOUBLE]         = evaluate_float_type<double>;
+            m_evaluation_map[PDO_CASSANDRA_TYPE_SET]            = 0;
+            m_evaluation_map[PDO_CASSANDRA_TYPE_MAP]            = 0;
+            m_evaluation_map[PDO_CASSANDRA_TYPE_LIST]           = 0;
+            m_evaluation_map[PDO_CASSANDRA_TYPE_UNKNOWN]        = 0;
+            init = true;
+        }
+        return m_evaluation_map[type];
+    }
 
 
     /**
@@ -443,7 +456,7 @@ namespace StreamExtraction {
             ret->value.lval = 0;
             return ret;
         }
-        EvaluatorType pe = evaluations[type];
+        EvaluatorType pe = evaluate(type);
         if (!pe) {
             std::cout << "Zval extraction for type: " << (int)type << " not handled yet" << std::endl;
             //TODO raise exception
