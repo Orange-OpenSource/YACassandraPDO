@@ -1,3 +1,7 @@
+0.5.0
+- Changed values binding system
+- Fixed some potential cql injection
+
 0.4.4
 - Fixed UUID test
 

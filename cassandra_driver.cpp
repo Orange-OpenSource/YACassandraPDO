@@ -18,6 +18,7 @@
 #include "php_pdo_cassandra_int.hpp"
 
 #include <boost/lexical_cast.hpp>
+#include <boost/regex.hpp>
 #include <errno.h>
 #include <netinet/tcp.h>
 #include <sys/types.h>
@@ -555,7 +556,14 @@ static int pdo_cassandra_handle_quote(pdo_dbh_t *dbh, const char *unquoted, int 
         break;
     }
     case PDO_CASSANDRA_TYPE_UUID: {
-        // TODO add check on type
+        static const boost::regex e("^.{8}(-.{4}){3}-.{12}$");
+        if (!boost::regex_match(unquoted, e)) {
+            pdo_cassandra_error_exception(dbh,
+                                          PDO_CASSANDRA_GENERAL_ERROR,
+                                          "%s: %s", "UUID value incorrectly formatted", unquoted);
+
+            return 0;
+        }
         *quotedlen = spprintf(quoted, 0, "%s", unquoted);
         break;
     }
