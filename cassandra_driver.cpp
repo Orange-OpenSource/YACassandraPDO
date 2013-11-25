@@ -518,7 +518,7 @@ static char *cassandra_escape(const char *to_escape, int to_escape_len)
 */
 static int pdo_cassandra_handle_quote(pdo_dbh_t *dbh, const char *unquoted, int unquotedlen, char **quoted, int *quotedlen, enum pdo_param_type paramtype TSRMLS_DC)
 {
-    switch (paramtype) {
+    switch ((pdo_cassandra_type) paramtype) {
     case PDO_CASSANDRA_TYPE_BOOLEAN: {
         char *to_set;
         if (!strcmp(unquoted, "0") || !strcasecmp(unquoted, "false"))
@@ -555,6 +555,11 @@ static int pdo_cassandra_handle_quote(pdo_dbh_t *dbh, const char *unquoted, int 
         break;
     }
     case PDO_CASSANDRA_TYPE_UUID: {
+        // TODO add check on type
+        *quotedlen = spprintf(quoted, 0, "%s", unquoted);
+        break;
+    }
+    case PDO_CASSANDRA_TYPE_DECIMAL: {
         // TODO add check on type
         *quotedlen = spprintf(quoted, 0, "%s", unquoted);
         break;
@@ -807,14 +812,14 @@ PHP_MINIT_FUNCTION(pdo_cassandra)
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_CONSISTENCYLEVEL_TWO",          PDO_CASSANDRA_CONSISTENCYLEVEL_TWO);
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_CONSISTENCYLEVEL_THREE",          PDO_CASSANDRA_CONSISTENCYLEVEL_THREE);
 
-
+    // Type exports
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_INT", PDO_CASSANDRA_TYPE_INTEGER);
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_FLOAT", PDO_CASSANDRA_TYPE_FLOAT);
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_UUID", PDO_CASSANDRA_TYPE_UUID);
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_BOOL", PDO_CASSANDRA_TYPE_BOOLEAN);
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_COLLECTION", PDO_CASSANDRA_TYPE_SET);
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_STR", PDO_CASSANDRA_TYPE_ASCII);
-
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_DECIMAL", PDO_CASSANDRA_TYPE_DECIMAL);
 
 
 #undef PHP_PDO_CASSANDRA_REGISTER_CONST_LONG

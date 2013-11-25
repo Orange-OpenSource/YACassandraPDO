@@ -25,27 +25,27 @@ $db->exec ("CREATE COLUMNFAMILY test (my_key text PRIMARY KEY,
 $stmt = $db->prepare ("UPDATE test SET my_decimal=:my_decimal WHERE my_key=:key");
 
 // Positive value insertion
-$stmt->bindValue (':my_decimal', "2524.1234", PDO::PARAM_INT);
+$stmt->bindValue (':my_decimal', "2524.1234", PDO::CASSANDRA_DECIMAL);
 $stmt->bindValue (':key', 'aa', PDO::PARAM_STR);
 $stmt->execute ();
 
-$stmt->bindValue (':my_decimal', "128.123456789", PDO::PARAM_INT);
+$stmt->bindValue (':my_decimal', "128.123456789", PDO::CASSANDRA_DECIMAL);
 $stmt->bindValue (':key', 'bb', PDO::PARAM_STR);
 $stmt->execute ();
 
-$stmt->bindValue (':my_decimal', "0", PDO::PARAM_INT);
+$stmt->bindValue (':my_decimal', "0", PDO::CASSANDRA_DECIMAL);
 $stmt->bindValue (':key', 'cc', PDO::PARAM_STR);
 $stmt->execute ();
 
-$stmt->bindValue (':my_decimal', "16.1616161616161616", PDO::PARAM_INT);
+$stmt->bindValue (':my_decimal', "16.1616161616161616", PDO::CASSANDRA_DECIMAL);
 $stmt->bindValue (':key', 'dd', PDO::PARAM_STR);
 $stmt->execute ();
 
-$stmt->bindValue (':my_decimal', "1234567890.123456789", PDO::PARAM_INT);
+$stmt->bindValue (':my_decimal', "1234567890.123456789", PDO::CASSANDRA_DECIMAL);
 $stmt->bindValue (':key', 'ee', PDO::PARAM_STR);
 $stmt->execute ();
 
-$stmt->bindValue (':my_decimal', "112233445566778899.112233445566778899", PDO::PARAM_INT);
+$stmt->bindValue (':my_decimal', "112233445566778899.112233445566778899", PDO::CASSANDRA_DECIMAL);
 $stmt->bindValue (':key', 'ff', PDO::PARAM_STR);
 $stmt->execute ();
 

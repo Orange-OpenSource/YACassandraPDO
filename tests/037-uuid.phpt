@@ -27,7 +27,7 @@ $stmt = $db->prepare("UPDATE test_uuid SET my_uuid=:my_uuid WHERE
 
 $uuid = '5bafc990-ceb7-11e0-bd10-aa2e4924019b';
 // UUID must be bound as an int value
-$stmt->bindValue('my_uuid', $uuid, PDO::PARAM_INT);
+$stmt->bindValue('my_uuid', $uuid, PDO::CASSANDRA_UUID);
 $stmt->execute();
 
 $stmt = $db->prepare("SELECT my_uuid FROM test_uuid WHERE id=1;");

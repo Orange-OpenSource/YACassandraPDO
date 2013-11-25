@@ -16,7 +16,7 @@ $stmt->execute ();
 
 var_dump ($stmt->fetchAll ());
 
-pdo_cassandra_done ($db, $keyspace);
+//pdo_cassandra_done ($db, $keyspace);
 
 echo "OK";
 

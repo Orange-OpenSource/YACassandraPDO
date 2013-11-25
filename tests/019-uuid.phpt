@@ -24,7 +24,7 @@ $db->exec ("CREATE COLUMNFAMILY uuid_test(
                 uuid uuid)");
 
 $stmt = $db->prepare ("UPDATE uuid_test SET uuid=:uuid WHERE my_key='uuidtest'");
-$stmt->bindValue (':uuid', $uuid, PDO::PARAM_INT);
+$stmt->bindValue (':uuid', $uuid, PDO::CASSANDRA_UUID);
 $stmt->execute ();
 
 $stmt = $db->query ("SELECT * FROM uuid_test WHERE my_key='uuidtest'");
