@@ -18,24 +18,25 @@ $db->exec ("CREATE KEYSPACE {$keyspace}  WITH REPLICATION = {'CLASS' : 'SimpleSt
 
 $dsn2 = $dsn . ';dbname=' . $keyspace;
 
-$db = new PDO($dsn2, $username, $password);
-
+$db->exec ("USE " . $keyspace . ";");
 $db->exec ("CREATE COLUMNFAMILY int_test (my_key text PRIMARY KEY, my_int bigint)");
 
-$stmt = $db->prepare ("UPDATE int_test SET my_int = :test WHERE my_key = :key");
-$stmt->bindValue (':test', 12345, PDO::PARAM_INT);
-$stmt->bindValue (':key', 'aa', PDO::PARAM_STR);
-$stmt->execute ();
+$stmt = $db->prepare ("UPDATE int_test SET my_int=:test WHERE my_key=:key");
+$stmt->bindValue (':test', 12345, PDO::CASSANDRA_INT);
+$stmt->bindValue (':key', 'aa', PDO::CASSANDRA_STR);
+$stmt->execute();
 
 $stmt->bindValue (':test', -54321, PDO::PARAM_INT);
 $stmt->bindValue (':key', 'bb', PDO::PARAM_STR);
 $stmt->execute ();
 
-$stmt = $db->query ("SELECT my_int FROM int_test WHERE my_key = 'aa'");
-var_dump ($stmt->fetchAll ());
+$stmt = $db->prepare("SELECT my_int FROM int_test WHERE my_key = 'aa'");
+$stmt->execute();
+var_dump($stmt->fetchAll());
 
-$stmt = $db->query ("SELECT my_int FROM int_test WHERE my_key = 'bb'");
-var_dump ($stmt->fetchAll ());
+$stmt = $db->prepare("SELECT my_int FROM int_test WHERE my_key = 'bb'");
+$stmt->execute();
+var_dump($stmt->fetchAll());
 
 pdo_cassandra_done ($db, $keyspace);
 
