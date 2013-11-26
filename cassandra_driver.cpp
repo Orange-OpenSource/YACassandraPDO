@@ -572,8 +572,21 @@ static int pdo_cassandra_handle_quote(pdo_dbh_t *dbh, const char *unquoted, int 
         *quotedlen = spprintf(quoted, 0, "%s", unquoted);
         break;
     }
+    case PDO_CASSANDRA_TYPE_BYTES: {
+        static const boost::regex e("^0[xX]([[:xdigit:]]+)$");
+        if (!boost::regex_match(unquoted, e)) {
+            pdo_cassandra_error_exception(dbh,
+                                          PDO_CASSANDRA_GENERAL_ERROR,
+                                          "%s: %s", "Blob value incorrectly formatted", unquoted);
+
+            return 0;
+        }
+        *quotedlen = spprintf(quoted, 0, "%s", unquoted);
+        break;
+    }
     default: {
         // PDO_CASSANDRA_TYPE_ASCII
+        // PDO_CASSANDRA_TYPE_UTF8
         char *escaped = cassandra_escape(unquoted, unquotedlen);
         *quotedlen = spprintf(quoted, 0, "'%s'", escaped);
         efree(escaped);
@@ -826,8 +839,9 @@ PHP_MINIT_FUNCTION(pdo_cassandra)
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_UUID", PDO_CASSANDRA_TYPE_UUID);
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_BOOL", PDO_CASSANDRA_TYPE_BOOLEAN);
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_COLLECTION", PDO_CASSANDRA_TYPE_SET);
-    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_STR", PDO_CASSANDRA_TYPE_ASCII);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_STR", PDO_CASSANDRA_TYPE_UTF8);
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_DECIMAL", PDO_CASSANDRA_TYPE_DECIMAL);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_BLOB", PDO_CASSANDRA_TYPE_BYTES);
 
 
 #undef PHP_PDO_CASSANDRA_REGISTER_CONST_LONG
