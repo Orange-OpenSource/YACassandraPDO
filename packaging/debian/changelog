@@ -1,3 +1,11 @@
+php-pdo-cassandra (0.5.0) precise; urgency=low
+
+  * Upgrade binding system
+	New approach is richer and safer
+	Retrocompatibility with former releases broken on the values bindings
+
+ -- Mathieu Lornac <mlornac.ext@orange.com>  Wed, 27 Nov 2013 08:30:16 +0200
+
 php-pdo-cassandra (0.4.4) precise; urgency=low
 
   * Fix tests
