@@ -5,11 +5,12 @@ Maintainer: Mathieu Lornac <mlornac.ext@orange.com>
 Build-Depends: debhelper (>= 5), autotools-dev, php5-dev, libboost-dev, libthrift-dev, thrift-compiler, pkg-config, libpcre3-dev, libboost-regex-dev
 Standards-Version: 3.8.3
 
-Homepage: http://code.google.com/a/apache-extras.org/r/emmanuelcourreges-fixes/
+Homepage: http://https://github.com/Orange-OpenSource/YACassandraPDO/
 Package: php-pdo-cassandra
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${php:Depends}, libboost-regex
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${php:Depends}
 Description: PHP PDO connector for Apache Cassandra.
  Cassandra is a distributed (peer-to-peer) system for the management
  and storage of structured data.
  This package contains the unnoficial PDO connector for PHP.
+ Runtime dependency on libboost-regex, use the version you compiled with
