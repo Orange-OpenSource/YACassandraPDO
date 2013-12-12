@@ -82,7 +82,7 @@ if test "x${PHP_PDO_CASSANDRA}" != "xno"; then
   elif test -f $prefix/include/php5/ext/pdo/php_pdo_driver.h; then
     pdo_cv_inc_path=$prefix/include/php5/ext
   else
-    AC_MSG_ERROR([Cannot find php_pdo_driverkk.h])
+    AC_MSG_ERROR([Cannot find php_pdo_driver.h])
   fi
   AC_MSG_RESULT($pdo_cv_inc_path)
 
@@ -110,6 +110,6 @@ if test "x${PHP_PDO_CASSANDRA}" != "xno"; then
   PHP_ADD_LIBRARY(boost_regex, 1, PDO_CASSANDRA_SHARED_LIBADD)
 
   PHP_SUBST(PDO_CASSANDRA_SHARED_LIBADD)
-  PHP_NEW_EXTENSION(pdo_cassandra, cassandra_driver.cpp cassandra_statement.cpp gen-cpp/Cassandra.cpp gen-cpp/cassandra_types.cpp, $ext_shared,,-Wall -Wno-write-strings, -I$pdo_cv_inc_path)
+  PHP_NEW_EXTENSION(pdo_cassandra, cassandra_driver.cpp cassandra_statement.cpp gen-cpp/Cassandra.cpp gen-cpp/cassandra_types.cpp, $ext_shared,,-Wall -Wno-write-strings -I$pdo_cv_inc_path)
 fi
 
