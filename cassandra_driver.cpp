@@ -567,6 +567,9 @@ static int pdo_cassandra_handle_quote(pdo_dbh_t *dbh, const char *unquoted, int 
         *quotedlen = spprintf(quoted, 0, "%s", unquoted);
         break;
     }
+    case PDO_CASSANDRA_TYPE_SET:
+    case PDO_CASSANDRA_TYPE_MAP:
+    case PDO_CASSANDRA_TYPE_LIST:
     case PDO_CASSANDRA_TYPE_DECIMAL: {
         // TODO add check on type
         *quotedlen = spprintf(quoted, 0, "%s", unquoted);
