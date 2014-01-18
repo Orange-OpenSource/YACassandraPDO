@@ -15,7 +15,7 @@ try {
     $db->exec ("DROP KEYSPACE {$keyspace}");
 } catch (PDOException $e) {}
 
-$db->exec ("CREATE KEYSPACE {$keyspace}  WITH REPLICATION = {'CLASS' : 'SimpleStrategy', 'replication_factor': 1}");
+$db->exec ("CREATE KEYSPACE {$keyspace}  WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor': 1}");
 $db->exec ("USE {$keyspace}");
 $db->exec ("CREATE COLUMNFAMILY test_null (id int primary key,
 					   my_int int,

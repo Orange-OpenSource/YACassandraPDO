@@ -15,8 +15,8 @@ try {
     $db->exec ("DROP KEYSPACE {$keyspace}_text");
 } catch (Exception $e) {}
 
-$db->exec ("CREATE KEYSPACE {$keyspace}_int WITH REPLICATION = {'CLASS' : 'SimpleStrategy', 'replication_factor': 1}");
-$db->exec ("CREATE KEYSPACE {$keyspace}_text WITH REPLICATION = {'CLASS' : 'SimpleStrategy', 'replication_factor': 1}");
+$db->exec ("CREATE KEYSPACE {$keyspace}_int WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor': 1}");
+$db->exec ("CREATE KEYSPACE {$keyspace}_text WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor': 1}");
 
 $db->exec ("USE {$keyspace}_int");
 $db->exec ("CREATE TABLE my_cf (my_key text PRIMARY KEY, my_int1 int, my_int2 int)");
