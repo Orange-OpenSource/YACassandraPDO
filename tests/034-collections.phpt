@@ -45,6 +45,23 @@ $db->exec("INSERT INTO cf (my_key, set_test_int)
 		VALUES (900, {21, 42, 84, 45, 456});");
 print_r($db->query('SELECT set_test_int FROM cf WHERE my_key=900;')->fetchObject());
 
+// test collection bind
+$stmt = $db->prepare("UPDATE cf set set_test_int=:col WHERE my_key=10;");
+$stmt->bindValue(':col', '{}', PDO::CASSANDRA_SET);
+$stmt->execute();
+
+$stmt = $db->prepare("SELECT set_test_int FROM cf WHERE my_key=:key");
+$stmt->bindValue(':key', 10, PDO::PARAM_INT);
+$stmt->execute();
+print_r($stmt->fetchAll());
+
+// bind collection value
+$stmt = $db->prepare("UPDATE cf set set_test_int={:int1, :int2, 2456} WHERE my_key=111");
+$stmt->bindValue(':int1', 123, PDO::PARAM_INT);
+$stmt->bindValue(':int2', 321, PDO::PARAM_INT);
+$stmt->execute();
+
+print_r ($db->query("SELECT set_test_int FROM cf WHERE my_key=111")->fetchObject());
 
 --EXPECT--
 stdClass Object
@@ -90,3 +107,30 @@ stdClass Object
         )
 
 )
+Array
+(
+    [0] => Array
+        (
+            [set_test_int] => Array
+                (
+                )
+
+            [0] => Array
+                (
+                )
+
+        )
+
+)
+stdClass Object
+(
+    [set_test_int] => Array
+        (
+            [0] => 123
+            [1] => 321
+            [2] => 2456
+        )
+
+)
+
+
