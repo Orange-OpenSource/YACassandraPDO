@@ -1,3 +1,9 @@
+php-pdo-cassandra (0.5.2) lucid; urgency=low
+
+  * prepared statement consistencty does not change handle consistency
+
+ -- Sandro Lex <slex.lex@orange.com>  Sat, 18 Jan 2014 23:09:13 +0100
+
 php-pdo-cassandra (0.5.1) lucid; urgency=low
 
   * fix bind value in collectionss

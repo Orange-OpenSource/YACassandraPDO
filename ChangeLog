@@ -1,3 +1,7 @@
+0.5.2
+ * prepared statement consistency does not change handle consistency
+ * add unit test for bind collection
+
 0.5.1
 - fix bindValue for collections
 

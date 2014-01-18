@@ -1,3 +1,9 @@
+php-pdo-cassandra (0.5.2) precise; urgency=low
+
+  * prepaed statement consistency does not change handle consistency 
+
+ -- Sandro Lex <sandro.lex@orange.com>  Sat, 18 Jan 2014 23:10:40 +0100
+
 php-pdo-cassandra (0.5.1) precise; urgency=low
 
   * fix bind value in collectionss
