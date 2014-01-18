@@ -115,6 +115,7 @@ typedef struct {
     zend_bool has_description;
     zend_bool preserve_values;
     ConsistencyLevel::type consistency;
+    ConsistencyLevel::type tmpConsistency;
 } pdo_cassandra_db_handle;
 /* }}} */
 

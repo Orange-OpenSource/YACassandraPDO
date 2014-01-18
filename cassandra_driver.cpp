@@ -44,6 +44,7 @@ static int  pdo_cassandra_handle_get_attribute(pdo_dbh_t *dbh, long attr, zval *
 static int  pdo_cassandra_get_error(pdo_dbh_t *dbh, pdo_stmt_t *stmt, zval *info TSRMLS_DC);
 static int pdo_cassandra_set_consistency(pdo_dbh_t *dbh, long attr TSRMLS_DC);
 static int pdo_cassandra_check_liveness(pdo_dbh_t *dbh TSRMLS_DC);
+static ConsistencyLevel::type pdo_cassandra_get_consistency(pdo_dbh_t *dbh);
 
 static struct pdo_dbh_methods cassandra_methods = {
     pdo_cassandra_handle_close,
@@ -263,6 +264,8 @@ static int pdo_cassandra_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSR
     dbh->driver_data   = NULL;
     dbh->methods       = &cassandra_methods;
     H->consistency     = ConsistencyLevel::ONE;
+    H->tmpConsistency     = ConsistencyLevel::ONE;
+
     H->compression     = 0;
     H->einfo.errcode   = 0;
     H->einfo.errmsg    = NULL;
@@ -364,6 +367,7 @@ static int pdo_cassandra_handle_prepare(pdo_dbh_t *dbh, const char *sql, long sq
 
     if (driver_options) {
         long consistency = -1;
+        H->tmpConsistency = pdo_cassandra_get_consistency(dbh);
         consistency = pdo_attr_lval(driver_options, static_cast <pdo_attribute_type>(PDO_CASSANDRA_ATTR_CONSISTENCYLEVEL), consistency TSRMLS_CC);
         if (consistency != -1) {
             pdo_cassandra_set_consistency(dbh, consistency);
@@ -770,6 +774,16 @@ static int pdo_cassandra_set_consistency(pdo_dbh_t *dbh, long consistency TSRMLS
     return 1;
 }
 /* }}} */
+
+/** {{{ static int pdo_get_consistency(pdo_cassandra_db_handle *H, long consistency TSRMLS_DC)
+*/
+static ConsistencyLevel::type pdo_cassandra_get_consistency(pdo_dbh_t *dbh)
+{
+    pdo_cassandra_db_handle *H = static_cast <pdo_cassandra_db_handle *>(dbh->driver_data);
+    return H->consistency;
+}
+/* }}} */
+
 
 /** {{{ static int pdo_cassandra_handle_get_attribute(pdo_dbh_t *dbh, long attr, zval *return_value TSRMLS_DC)
 */
