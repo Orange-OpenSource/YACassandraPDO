@@ -1,3 +1,9 @@
+php-pdo-cassandra (0.5.3) precise; urgency=low
+
+  * add support to 1.2.13 idl with LOCAL_ONE consistency
+
+ -- Sandro Lex <sandro.lex@orange.com>  Thu, 06 Mar 2014 23:10:40 +0100
+
 php-pdo-cassandra (0.5.2) precise; urgency=low
 
   * prepaed statement consistency does not change handle consistency 
