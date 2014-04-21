@@ -36,11 +36,13 @@ pdo_cassandra ./configure script takes the following options:
 
  - --with-boost-dir[=DIR] can be used to specify 'non-standard' boost installation prefix.
 
-# Build and Install script
+# Download, Build and Install script
 
 _run as root_
 
 ```sh
+#!/bin/sh
+
 apt-get update
 apt-get install -y wget unzip build-essential
 
