@@ -36,6 +36,35 @@ pdo_cassandra ./configure script takes the following options:
 
  - --with-boost-dir[=DIR] can be used to specify 'non-standard' boost installation prefix.
 
+# Build and Install script
+
+_run as root_
+
+```sh
+apt-get update
+apt-get install -y wget unzip build-essential
+
+echo "deb http://debian.datastax.com/community stable main" > /etc/apt/sources.list.d/datastax.list
+wget -O - http://debian.datastax.com/debian/repo_key | apt-key add -
+apt-get update
+apt-get install -y --force-yes libboost-all-dev php5-dev libpcre3-dev pkg-config g++ libthrift0 libthrift-dev thrift-compiler
+ln -s /usr/bin/thrift /usr/local/bin/thrift
+
+cd /tmp
+wget https://github.com/Orange-OpenSource/YACassandraPDO/archive/master.zip
+unzip master.zip
+rm master.zip
+cd YACassandraPDO-master/
+
+phpize
+./configure
+make
+make install
+
+cd ..
+rm -r /tmp/YACassandraPDO-master
+```
+
 # Running tests
 
 After a successful build tests can be executed using an instance of Cassandra. Default config
