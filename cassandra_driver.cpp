@@ -656,7 +656,7 @@ static int pdo_cassandra_handle_set_attribute(pdo_dbh_t *dbh, long attr, zval *v
 
         case PDO_CASSANDRA_ATTR_RANDOMIZE:
             convert_to_boolean(val);
-            H->socket->setMaxConsecutiveFailures(Z_BVAL_P(val));
+            H->socket->setRandomize(Z_BVAL_P(val));
         break;
 
         case PDO_CASSANDRA_ATTR_ALWAYS_TRY_LAST:
