@@ -7,6 +7,12 @@ We cloned it on GitHub because the original project seemed to be dead.
 
 This version is developped for the CQL3 target only. We do not provide any support for former versions of CQL.
 
+# Cassandra versions support
+
+The driver runs well with cassandra 1.2.x
+We plan to support Cassandra 2.0 versions in the next few months.
+The support of Cassandra 2.0 is experimental. Checkout the project to the 2.0_experimental branch to enhance compatibility with 2.0 versions
+
 # What is different from the Datastax version?
  - Added support for float numbers, decimals
  - Added support for collections (map, set, list)
