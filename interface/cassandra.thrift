@@ -55,7 +55,7 @@ namespace rb CassandraThrift
 # An effort should be made not to break forward-client-compatibility either
 # (e.g. one should avoid removing obsolete fields from the IDL), but no
 # guarantees in this respect are made by the Cassandra project.
-const string VERSION = "19.36.2"
+const string VERSION = "19.38.0"
 
 
 #
@@ -148,10 +148,17 @@ exception TimedOutException {
      */
     1: optional i32 acknowledged_by
 
-    /**
-     * in case of atomic_batch_mutate method this field tells if the batch was written to the batchlog.
+    /** 
+     * in case of atomic_batch_mutate method this field tells if the batch 
+     * was written to the batchlog.  
      */
     2: optional bool acknowledged_by_batchlog
+
+    /** 
+     * for the CAS method, this field tells if we timed out during the paxos
+     * protocol, as opposed to during the commit of our update
+     */
+    3: optional bool paxos_in_progress
 }
 
 /** invalid authentication request (invalid keyspace, user does not exist, or credentials invalid) */
@@ -230,6 +237,8 @@ enum ConsistencyLevel {
     ANY = 6,
     TWO = 7,
     THREE = 8,
+    SERIAL = 9,
+    LOCAL_SERIAL = 10,
     LOCAL_ONE = 11,
 }
 
@@ -382,6 +391,11 @@ struct EndpointDetails {
     3: optional string rack
 }
 
+struct CASResult {
+    1: required bool success,
+    2: optional list<Column> current_values,
+}
+
 /**
     A TokenRange describes part of the Cassandra ring, it is a mapping from a range to
     endpoints responsible for that range.
@@ -420,6 +434,15 @@ struct ColumnDef {
     5: optional map<string,string> index_options
 }
 
+/**
+    Describes a trigger.
+    `options` should include at least 'class' param.
+    Other options are not supported yet.
+*/
+struct TriggerDef {
+    1: required string name,
+    2: required map<string,string> options
+}
 
 /* describes a column family. */
 struct CfDef {
@@ -446,6 +469,11 @@ struct CfDef {
     34: optional string caching="keys_only",
     37: optional double dclocal_read_repair_chance = 0.0,
     38: optional bool populate_io_cache_on_flush,
+    39: optional i32 memtable_flush_period_in_ms,
+    40: optional i32 default_time_to_live,
+    41: optional i32 index_interval,
+    42: optional string speculative_retry="NONE",
+    43: optional list<TriggerDef> triggers,
 
     /* All of the following are now ignored and unsupplied. */
 
@@ -496,7 +524,14 @@ enum CqlResultType {
     INT = 3
 }
 
-/** Row returned from a CQL query */
+/** 
+  Row returned from a CQL query.
+
+  This struct is used for both CQL2 and CQL3 queries.  For CQL2, the partition key
+  is special-cased and is always returned.  For CQL3, it is not special cased;
+  it will be included in the columns list if it was included in the SELECT and
+  the key field is always null.
+*/
 struct CqlRow {
     1: required binary key,
     2: required list<Column> columns
@@ -632,6 +667,30 @@ service Cassandra {
            2:required ColumnParent column_parent,
            3:required CounterColumn column,
            4:required ConsistencyLevel consistency_level=ConsistencyLevel.ONE)
+       throws (1:InvalidRequestException ire, 2:UnavailableException ue, 3:TimedOutException te),
+
+  /**
+   * Atomic compare and set.
+   *
+   * If the cas is successfull, the success boolean in CASResult will be true and there will be no current_values.
+   * Otherwise, success will be false and current_values will contain the current values for the columns in
+   * expected (that, by definition of compare-and-set, will differ from the values in expected).
+   *
+   * A cas operation takes 2 consistency level. The first one, serial_consistency_level, simply indicates the
+   * level of serialization required. This can be either ConsistencyLevel.SERIAL or ConsistencyLevel.LOCAL_SERIAL.
+   * The second one, commit_consistency_level, defines the consistency level for the commit phase of the cas. This
+   * is a more traditional consistency level (the same CL than for traditional writes are accepted) that impact
+   * the visibility for reads of the operation. For instance, if commit_consistency_level is QUORUM, then it is
+   * guaranteed that a followup QUORUM read will see the cas write (if that one was successful obviously). If
+   * commit_consistency_level is ANY, you will need to use a SERIAL/LOCAL_SERIAL read to be guaranteed to see
+   * the write.
+   */
+  CASResult cas(1:required binary key,
+                2:required string column_family,
+                3:list<Column> expected,
+                4:list<Column> updates,
+                5:required ConsistencyLevel serial_consistency_level=ConsistencyLevel.SERIAL,
+                6:required ConsistencyLevel commit_consistency_level=ConsistencyLevel.QUORUM)
        throws (1:InvalidRequestException ire, 2:UnavailableException ue, 3:TimedOutException te),
 
   /**
@@ -783,10 +842,10 @@ service Cassandra {
   /** updates properties of a column family. returns the new schema id. */
   string system_update_column_family(1:required CfDef cf_def)
     throws (1:InvalidRequestException ire, 2:SchemaDisagreementException sde),
-  
+
+
   /**
-   * Executes a CQL (Cassandra Query Language) statement and returns a
-   * CqlResult containing the results.
+   * @deprecated Will become a no-op in 2.2. Please use the CQL3 version instead.
    */
   CqlResult execute_cql_query(1:required binary query, 2:required Compression compression)
     throws (1:InvalidRequestException ire,
@@ -794,6 +853,10 @@ service Cassandra {
             3:TimedOutException te,
             4:SchemaDisagreementException sde)
 
+  /**
+   * Executes a CQL3 (Cassandra Query Language) statement and returns a
+   * CqlResult containing the results.
+   */
   CqlResult execute_cql3_query(1:required binary query, 2:required Compression compression, 3:required ConsistencyLevel consistency)
     throws (1:InvalidRequestException ire,
             2:UnavailableException ue,
@@ -802,21 +865,23 @@ service Cassandra {
 
 
   /**
-   * Prepare a CQL (Cassandra Query Language) statement by compiling and returning
-   * - the type of CQL statement
-   * - an id token of the compiled CQL stored on the server side.
-   * - a count of the discovered bound markers in the statement 
+   * @deprecated Will become a no-op in 2.2. Please use the CQL3 version instead.
    */
   CqlPreparedResult prepare_cql_query(1:required binary query, 2:required Compression compression)
     throws (1:InvalidRequestException ire)
 
+  /**
+   * Prepare a CQL3 (Cassandra Query Language) statement by compiling and returning
+   * - the type of CQL statement
+   * - an id token of the compiled CQL stored on the server side.
+   * - a count of the discovered bound markers in the statement
+   */
   CqlPreparedResult prepare_cql3_query(1:required binary query, 2:required Compression compression)
     throws (1:InvalidRequestException ire)
 
-             
+
   /**
-   * Executes a prepared CQL (Cassandra Query Language) statement by passing an id token and  a list of variables
-   * to bind and returns a CqlResult containing the results.
+   * @deprecated Will become a no-op in 2.2. Please use the CQL3 version instead.
    */
   CqlResult execute_prepared_cql_query(1:required i32 itemId, 2:required list<binary> values)
     throws (1:InvalidRequestException ire,
@@ -824,6 +889,10 @@ service Cassandra {
             3:TimedOutException te,
             4:SchemaDisagreementException sde)
 
+  /**
+   * Executes a prepared CQL3 (Cassandra Query Language) statement by passing an id token, a list of variables
+   * to bind, and the consistency level, and returns a CqlResult containing the results.
+   */
   CqlResult execute_prepared_cql3_query(1:required i32 itemId, 2:required list<binary> values, 3:required ConsistencyLevel consistency)
     throws (1:InvalidRequestException ire,
             2:UnavailableException ue,
