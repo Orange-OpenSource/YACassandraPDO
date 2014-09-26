@@ -1,0 +1,9 @@
+libcassandra-pdo-php5 for Debian
+--------------------------------
+
+The sources are not takne from a real Source package because it has
+never been released. Instead, we took a git revision[1] from after Sep
+13, 2011.
+
+--
+[1] f5361b2020ed, or really f5361b2020edaee8a6fda0153833fdfa4253e696
