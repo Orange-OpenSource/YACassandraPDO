@@ -1,6 +1,12 @@
+php-pdo-cassandra (0.6.0) precise; urgency=low
+
+  * Compatibilty with cassandra 2.0.x. Driver is retrocompatible with cassandra 1.9.x
+
+ -- Mathieu Lornac <mlornac.ext@orange.com>  Tue, 30 Sep 2014 14:54:17 +0200
+
 php-pdo-cassandra (0.5.3) lucid; urgency=low
 
-  * add support to 1.2.13 idl with LOCAL_ONE consistency 
+  * add support to 1.2.13 idl with LOCAL_ONE consistency
 
  -- Sandro Lex <sandro.lex@orange.com>  Thu, 06 Mar 2014 23:09:13 +0100
 
