@@ -337,7 +337,7 @@ namespace StreamExtraction {
     zval *evaluate_bytes_to_zval(const unsigned char *binary, int size) {
         zval *ret;
         MAKE_STD_ZVAL(ret);
-        Z_TYPE_P(ret) = IS_RESOURCE;
+        Z_TYPE_P(ret) = IS_STRING;
         char *str = (char *) emalloc(sizeof(*str) * (size));
         memcpy(str, binary, size);
         Z_STRVAL_P(ret) = str;
@@ -508,7 +508,6 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
     }
 
     stmt->columns[colno].param_type = PDO_PARAM_ZVAL;
-
     stmt->columns[colno].precision  = 0;
     stmt->columns[colno].maxlen     = -1;
     return 1;
