@@ -50,7 +50,7 @@ $stmt = $db->prepare("UPDATE cf set set_test_int=:col WHERE my_key=10;");
 $stmt->bindValue(':col', '{}', PDO::CASSANDRA_SET);
 $stmt->execute();
 
-$stmt = $db->prepare("SELECT set_test_int FROM cf WHERE my_key=:key");
+$stmt = $db->prepare("SELECT set_test_int, set_test_vc FROM cf WHERE my_key=:key");
 $stmt->bindValue(':key', 10, PDO::PARAM_INT);
 $stmt->execute();
 print_r($stmt->fetchAll());
@@ -109,17 +109,6 @@ stdClass Object
 )
 Array
 (
-    [0] => Array
-        (
-            [set_test_int] => Array
-                (
-                )
-
-            [0] => Array
-                (
-                )
-
-        )
 
 )
 stdClass Object

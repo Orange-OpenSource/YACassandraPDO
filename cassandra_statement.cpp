@@ -337,11 +337,13 @@ namespace StreamExtraction {
     zval *evaluate_bytes_to_zval(const unsigned char *binary, int size) {
         zval *ret;
         MAKE_STD_ZVAL(ret);
+        // RESOURCE
         Z_TYPE_P(ret) = IS_STRING;
         char *str = (char *) emalloc(sizeof(*str) * (size));
         memcpy(str, binary, size);
         Z_STRVAL_P(ret) = str;
         Z_STRLEN_P(ret) = size;
+        //        std::cout << "Bytes to zval" << size << " | " << str << std::endl;
         return ret;
     }
 
@@ -422,7 +424,7 @@ namespace StreamExtraction {
     static EvaluatorType evaluate(pdo_cassandra_type type) {
         static bool init = false;
         if (!init) {
-            m_evaluation_map[PDO_CASSANDRA_TYPE_BYTES]          = 0;
+            m_evaluation_map[PDO_CASSANDRA_TYPE_BYTES]          = evaluate_bytes_to_zval;
             m_evaluation_map[PDO_CASSANDRA_TYPE_ASCII]          = evaluate_string;
             m_evaluation_map[PDO_CASSANDRA_TYPE_UTF8]           = evaluate_string;
             m_evaluation_map[PDO_CASSANDRA_TYPE_INTEGER]        = evaluate_integer_type<int>;
@@ -459,9 +461,10 @@ namespace StreamExtraction {
         }
         EvaluatorType pe = evaluate(type);
         if (!pe) {
-            std::cout << "Zval extraction for type: " << (int)type << " not handled yet" << std::endl;
+                        std::cout << "Zval extraction for type: " << (int)type << " not handled yet" << std::endl;
             //TODO raise exception
         }
+        //        std::cout << "Evaluation for: " << size << std::endl;
         return (*pe)(binary, size);
     }
 
@@ -617,11 +620,12 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
 
     // Do we have data for this column?
     for (std::vector<Column>::iterator col_it = (*S->it).columns.begin(); col_it < (*S->it).columns.end(); col_it++) {
+        std::cout << "NAME: " << (*col_it).name.c_str() << std::endl;
         if (!current_column.compare(0, current_column.size(), (*col_it).name.c_str(), (*col_it).name.size())) {
 
             pdo_cassandra_type lparam_type;
             if (H->preserve_values) {
-                lparam_type = PDO_CASSANDRA_TYPE_UTF8;
+                lparam_type = PDO_CASSANDRA_TYPE_BYTES;
             } else {
                 lparam_type = pdo_cassandra_get_cassandra_type(S->result.get ()->schema.value_types [current_column]);
             }

@@ -36,7 +36,7 @@ $stmt = $db->prepare ("INSERT INTO types_test(my_key, my_blob, my_ascii, my_text
                                     :varint,   :int,   :bigint)");
 
 $stmt->bindValue (':key', "hello key");
-$stmt->bindValue (':blob', "74686520616e73776572206973203432");
+$stmt->bindValue (':blob', "0x74686520616e73776572206973203432", PDO::CASSANDRA_BLOB);
 $stmt->bindValue (':ascii', "hello ascii");
 $stmt->bindValue (':text', "what else than lorem ipsum? well, ∆∆∆");
 $stmt->bindValue (':varchar', "what else than more lorem ipsum?");
@@ -52,10 +52,12 @@ var_dump ($data);
 
 $stmt = $db->query ("SELECT my_uuid, my_varint FROM types_test");
 $data2 = $stmt->fetchAll ();
-$g = gmp_init(bin2hex($data2[0]['my_varint']), 16);
+var_dump($data2[0]['my_uuid']);
 
-var_dump ($data2[0]['my_uuid']);
-echo gmp_strval ($g) . PHP_EOL;
+// Test with key not found
+$stmt = $db->query ("SELECT my_uuid, my_varint FROM types_test WHERE my_key='notfound'");
+$data2 = $stmt->fetchAll ();
+print_r($data2);
 
 pdo_cassandra_done ($db, $keyspace);
 
@@ -95,5 +97,4 @@ array(1) {
   }
 }
 string(36) "5bafc990-ceb7-11e0-bd10-aa2e4924019b"
-123
 OK
