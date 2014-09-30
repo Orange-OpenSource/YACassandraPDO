@@ -337,13 +337,11 @@ namespace StreamExtraction {
     zval *evaluate_bytes_to_zval(const unsigned char *binary, int size) {
         zval *ret;
         MAKE_STD_ZVAL(ret);
-        // RESOURCE
-        Z_TYPE_P(ret) = IS_STRING;
+        Z_TYPE_P(ret) = IS_RESOURCE;
         char *str = (char *) emalloc(sizeof(*str) * (size));
         memcpy(str, binary, size);
         Z_STRVAL_P(ret) = str;
         Z_STRLEN_P(ret) = size;
-        //        std::cout << "Bytes to zval" << size << " | " << str << std::endl;
         return ret;
     }
 
@@ -461,10 +459,9 @@ namespace StreamExtraction {
         }
         EvaluatorType pe = evaluate(type);
         if (!pe) {
-                        std::cout << "Zval extraction for type: " << (int)type << " not handled yet" << std::endl;
+            std::cout << "Zval extraction for type: " << (int)type << " not handled yet" << std::endl;
             //TODO raise exception
         }
-        //        std::cout << "Evaluation for: " << size << std::endl;
         return (*pe)(binary, size);
     }
 
@@ -510,11 +507,7 @@ static int pdo_cassandra_stmt_describe(pdo_stmt_t *stmt, int colno TSRMLS_DC)
         stmt->columns[colno].namelen = current_column.size();
     }
 
-    if (H->preserve_values) {
-        stmt->columns[colno].param_type = PDO_PARAM_STR;
-    } else {
-        stmt->columns[colno].param_type = PDO_PARAM_ZVAL;
-    }
+    stmt->columns[colno].param_type = PDO_PARAM_ZVAL;
 
     stmt->columns[colno].precision  = 0;
     stmt->columns[colno].maxlen     = -1;
@@ -620,7 +613,6 @@ static int pdo_cassandra_stmt_get_column(pdo_stmt_t *stmt, int colno, char **ptr
 
     // Do we have data for this column?
     for (std::vector<Column>::iterator col_it = (*S->it).columns.begin(); col_it < (*S->it).columns.end(); col_it++) {
-        std::cout << "NAME: " << (*col_it).name.c_str() << std::endl;
         if (!current_column.compare(0, current_column.size(), (*col_it).name.c_str(), (*col_it).name.size())) {
 
             pdo_cassandra_type lparam_type;
