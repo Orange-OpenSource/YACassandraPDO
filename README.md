@@ -1,6 +1,6 @@
 # Introduction
 
-PDO driver for Cassandra CQL.
+PDO driver implementation for Cassandra CQL.
 
 This repository is a fork of: https://code.google.com/a/apache-extras.org/p/cassandra-pdo/
 We cloned it on GitHub because the original project seemed to be dead.
@@ -9,9 +9,9 @@ This version is developped for the CQL3 target only. We do not provide any suppo
 
 # Cassandra versions support
 
-The driver runs well with cassandra 1.2.x
-We plan to support Cassandra 2.0 versions in the next few months.
-The support of Cassandra 2.0 is experimental. Checkout the project to the 2.0_experimental branch to enhance compatibility with 2.0 versions
+NEW: The driver is compatible with versions of Cassandra up to 2.0.x
+
+The support of Cassandra 2.0 is very new. So if you experience bugs, incorrect behavior or anything suspect, don't hesitate to fill a bug report.
 
 # What is different from the Datastax version?
  - Added support for float numbers, decimals
@@ -55,7 +55,7 @@ Before make test:
 This is to prevent accidentally dropping keyspaces that might in use.
 
 # Create a debian package from the sources
-   
+
     add "deb http://debian.datastax.com/community stable main" in your apt sources list
     apt-get install libthrift0 libthrift-dev thrift-compiler
 
