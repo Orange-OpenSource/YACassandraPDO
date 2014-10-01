@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo "extension=pdo_cassandra.so" > /etc/php5/mods-available/pdo_cassandra.ini
+php5enmod pdo_cassandra
