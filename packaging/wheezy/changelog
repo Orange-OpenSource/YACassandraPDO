@@ -1,0 +1,71 @@
+php-pdo-cassandra (0.5.3) precise; urgency=low
+
+  * add support to 1.2.13 idl with LOCAL_ONE consistency
+
+ -- Sandro Lex <sandro.lex@orange.com>  Thu, 06 Mar 2014 23:10:40 +0100
+
+php-pdo-cassandra (0.5.2) precise; urgency=low
+
+  * prepaed statement consistency does not change handle consistency 
+
+ -- Sandro Lex <sandro.lex@orange.com>  Sat, 18 Jan 2014 23:10:40 +0100
+
+php-pdo-cassandra (0.5.1) precise; urgency=low
+
+  * fix bind value in collectionss
+
+ -- Sandro Lex <sandro.lex@orange.com>  Mon, 13 Jan 2014 10:23:33 +0100
+
+php-pdo-cassandra (0.5.0) precise; urgency=low
+
+  * Upgrade binding system
+	New approach is richer and safer
+	Retrocompatibility with former releases broken on the values bindings
+
+ -- Mathieu Lornac <mlornac.ext@orange.com>  Wed, 27 Nov 2013 08:30:16 +0200
+
+php-pdo-cassandra (0.4.4) precise; urgency=low
+
+  * Fix tests
+
+ -- Mathieu Lornac <mlornac.ext@orange.com>  Wed, 05 Jun 2013 08:30:16 +0200
+
+php-pdo-cassandra (0.4.3) precise; urgency=low
+
+  * Upgrade Added support of Decimals
+  * Fix bug on collections (Keys truncated to a fixed len)
+
+ -- Mathieu Lornac <mlornac.ext@orange.com>  Wed, 05 Jun 2013 08:30:16 +0200
+
+php-pdo-cassandra (0.4.2) precise; urgency=low
+
+  * Fix Null terminated string fix
+
+ -- Mathieu Lornac <mlornac.ext@orange.com>  Mon, 06 May 2013 15:30:16 +0200
+
+php-pdo-cassandra (0.4.1) lucid; urgency=low
+
+  * Updated debian/
+
+ -- Sandro Lex <sandro.lex.@orange.com>  Fri, 05 Apr 2013 17:52:57 +0200
+
+php-pdo-cassandra (0.4.0) lucid; urgency=low
+
+  * Fix Integer conversions error, bind parameters
+
+ -- Mathieu Lornac <mlornac.ext@orange.com>  Mon, 11 Mar 2013 17:52:57 +0200
+
+php-pdo-cassandra (0.4.0) lucid; urgency=low
+
+  * Changed Support of float, collections
+
+ -- Mathieu Lornac <mlornac.ext@orange.com>  Mon, 11 Mar 2013 17:52:57 +0200
+
+php-pdo-cassandra (0.4.0) lucid; urgency=low
+
+  * Build-Depends pkg-config and libpcre3-dev.
+  * Re-release for lucid.
+
+php-pdo-cassandra (0.4.0) lucid; urgency=low
+  * Initial release.
+ -- Datastax base code

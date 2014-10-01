@@ -55,6 +55,9 @@ Before make test:
 This is to prevent accidentally dropping keyspaces that might in use.
 
 # Create a debian package from the sources
+   
+    add "deb http://debian.datastax.com/community stable main" in your apt sources list
+    apt-get install libthrift0 libthrift-dev thrift-compiler
 
     ln -s packaging/debian debian
     dpkg-buildpackage -rfakeroot -us -uc
