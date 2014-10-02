@@ -18,7 +18,7 @@
 # define _PHP_PDO_CASSANDRA_H_
 
 #define PHP_PDO_CASSANDRA_EXTNAME "pdo_cassandra"
-#define PHP_PDO_CASSANDRA_EXTVER "0.5.1"
+#define PHP_PDO_CASSANDRA_EXTVER "0.6.0"
 
 #ifdef __cplusplus
 extern "C" {
