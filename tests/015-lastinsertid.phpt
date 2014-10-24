@@ -6,7 +6,7 @@ Test last insert id
 <?php
 require_once(dirname(__FILE__) . '/config.inc');
 
-$db = new PDO($dsn, $username, $password);
+$db = new PDO($dsn, $username, $password, $params);
 
 pdo_cassandra_init ($db, $keyspace);
 

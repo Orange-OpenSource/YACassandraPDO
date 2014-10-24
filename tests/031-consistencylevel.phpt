@@ -8,7 +8,7 @@ Test consistency level set in db handle
 require_once(dirname(__FILE__) . '/config.inc');
 
 // pass consistency param in constructor
-$params = array(PDO::CASSANDRA_ATTR_CONSISTENCYLEVEL => PDO::CASSANDRA_CONSISTENCYLEVEL_ONE);
+$params = array_merge($params, array(PDO::CASSANDRA_ATTR_CONSISTENCYLEVEL => PDO::CASSANDRA_CONSISTENCYLEVEL_ONE));
 $db = new PDO($dsn, $username, $password, $params);
 
 pdo_cassandra_init ($db, $keyspace);

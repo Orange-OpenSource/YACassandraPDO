@@ -7,7 +7,7 @@ Test quoting values
 
 require_once(dirname(__FILE__) . '/config.inc');
 
-$db = new PDO($dsn, $username, $password);
+$db = new PDO($dsn, $username, $password, $params);
 var_dump ($db->quote ("'hello' 'world'"));
 var_dump ($db->quote ("Co'mpl''ex \"st'\"ring"));
 var_dump ($db->quote ("'''''''''", PDO::PARAM_LOB));

@@ -272,6 +272,7 @@ static int pdo_cassandra_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSR
     H->has_description = 0;
     H->preserve_values = 0;
 
+    H->factory.reset(new TSSLSocketFactory);
     H->socket.reset(new TSocketPool);
     H->transport.reset(new TFramedTransport(H->socket));
     H->protocol.reset(new TBinaryProtocol(H->transport));
@@ -280,6 +281,9 @@ static int pdo_cassandra_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSR
 
     /* set possible connection timeout */
     long timeout = 0;
+    /* set SSL propeties */
+    char *ssl_key = NULL, *ssl_cert = NULL, *ssl_cipher = NULL, *ssl_capath = NULL;
+    int ssl_validate = 0, ssl_verify_host = 1;
 
     if (driver_options) {
         timeout = pdo_attr_lval(driver_options, PDO_ATTR_TIMEOUT, timeout TSRMLS_CC);
@@ -296,6 +300,42 @@ static int pdo_cassandra_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSR
         if (pdo_attr_lval(driver_options, static_cast <pdo_attribute_type>(PDO_CASSANDRA_ATTR_PRESERVE_VALUES), 0 TSRMLS_CC)) {
             H->preserve_values = 1;
         }
+
+        ssl_key = pdo_attr_strval(driver_options, static_cast <pdo_attribute_type>(PDO_CASSANDRA_ATTR_SSL_KEY), NULL TSRMLS_CC);
+        ssl_cert = pdo_attr_strval(driver_options, static_cast <pdo_attribute_type>(PDO_CASSANDRA_ATTR_SSL_CERT), NULL TSRMLS_CC);
+        ssl_capath = pdo_attr_strval(driver_options, static_cast <pdo_attribute_type>(PDO_CASSANDRA_ATTR_SSL_CAPATH), NULL TSRMLS_CC);
+        ssl_cipher = pdo_attr_strval(driver_options, static_cast <pdo_attribute_type>(PDO_CASSANDRA_ATTR_SSL_CIPHER), NULL TSRMLS_CC);
+        ssl_validate = pdo_attr_lval(driver_options, static_cast <pdo_attribute_type>(PDO_CASSANDRA_ATTR_SSL_VALIDATE), 0 TSRMLS_CC);
+        ssl_verify_host = pdo_attr_lval(driver_options, static_cast <pdo_attribute_type>(PDO_CASSANDRA_ATTR_SSL_VERIFY_HOST), 1 TSRMLS_CC);
+
+        if (ssl_key || ssl_cert || ssl_cipher || ssl_capath) {
+            H->ssl = 1;
+
+            if (ssl_cert) {
+                H->factory->loadCertificate(ssl_cert);
+            }
+
+            if (ssl_key) {
+                H->factory->loadPrivateKey(ssl_key);
+            }
+
+            if (ssl_capath) {
+                H->factory->loadTrustedCertificates(ssl_capath);
+            }
+
+            if (ssl_validate) {
+                H->factory->authenticate(TRUE);
+            }
+
+            if (ssl_cipher) {
+                H->factory->ciphers(ssl_cipher);
+            }
+
+            if (!ssl_verify_host) {
+                boost::shared_ptr<AccessManager> accessManager(new NoHostVerificationAccessManager);
+                H->factory->access(accessManager);
+            }
+        }
     }
 
     /* Break down the values */
@@ -311,6 +351,18 @@ static int pdo_cassandra_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSR
     }
 
     try {
+        H->socket->open();
+
+        if (H->ssl) {
+           /* Remeber at this point the socket is already open */
+           H->sslSocket = H->factory->createSocket(H->socket->getSocketFD());
+           H->sslSocket->setHost(H->socket->getHost());
+           H->sslSocket->setPort(H->socket->getPort());
+           H->transport.reset(new TFramedTransport(H->sslSocket));
+           H->protocol.reset(new TBinaryProtocol(H->transport));
+           H->client.reset(new CassandraClient(H->protocol));
+        }
+
         H->transport->open();
 
         php_cassandra_handle_auth (dbh, H);
@@ -338,6 +390,8 @@ static int pdo_cassandra_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSR
         pdo_cassandra_error_exception(dbh, PDO_CASSANDRA_AUTHORIZATION_ERROR, "%s", e.why.c_str());
     } catch (SchemaDisagreementException &e) {
         pdo_cassandra_error_exception(dbh, PDO_CASSANDRA_SCHEMA_DISAGREEMENT, "%s", e.what());
+    } catch (TSSLException &e) {
+        pdo_cassandra_error_exception(dbh, PDO_CASSANDRA_SSL_ERROR, "%s", e.what());
     } catch (TTransportException &e) {
         pdo_cassandra_error_exception(dbh, PDO_CASSANDRA_TRANSPORT_ERROR, "%s", e.what());
     } catch (TException &e) {
@@ -484,6 +538,8 @@ static long pdo_cassandra_handle_execute(pdo_dbh_t *dbh, const char *sql, long s
         pdo_cassandra_error(dbh, PDO_CASSANDRA_AUTHORIZATION_ERROR, "%s", e.why.c_str());
     } catch (SchemaDisagreementException &e) {
         pdo_cassandra_error(dbh, PDO_CASSANDRA_SCHEMA_DISAGREEMENT, "%s", e.what());
+    } catch (TSSLException &e) {
+        pdo_cassandra_error(dbh, PDO_CASSANDRA_SSL_ERROR, "%s", e.what());
     } catch (TTransportException &e) {
         pdo_cassandra_error(dbh, PDO_CASSANDRA_TRANSPORT_ERROR, "%s", e.what());
     } catch (TException &e) {
@@ -614,6 +670,9 @@ static int pdo_cassandra_handle_close(pdo_dbh_t *dbh TSRMLS_DC)
         pdo_cassandra_einfo *einfo = &H->einfo;
 
         H->transport->close();
+	if (H->ssl) {
+           H->sslSocket.reset();
+        }
         H->socket.reset();
         H->transport.reset();
         H->protocol.reset();
@@ -636,6 +695,11 @@ static int pdo_cassandra_handle_set_attribute(pdo_dbh_t *dbh, long attr, zval *v
 {
     pdo_cassandra_db_handle *H = static_cast <pdo_cassandra_db_handle *>(dbh->driver_data);
     pdo_cassandra_constant attribute = static_cast <pdo_cassandra_constant>(attr);
+    boost::shared_ptr<TSocket> sock = H->socket;
+
+    if (H->ssl) {
+       sock = H->sslSocket;
+    }
 
     switch (attribute) {
 
@@ -668,30 +732,30 @@ static int pdo_cassandra_handle_set_attribute(pdo_dbh_t *dbh, long attr, zval *v
             convert_to_long(val);
 
             if (Z_LVAL_P(val) == 0) {
-                H->socket->setLinger(false, 0);
+                sock->setLinger(false, 0);
             } else {
-                H->socket->setLinger(true, Z_LVAL_P(val));
+                sock->setLinger(true, Z_LVAL_P(val));
             }
         break;
 
         case PDO_CASSANDRA_ATTR_NO_DELAY:
             convert_to_boolean(val);
-            H->socket->setNoDelay(Z_BVAL_P(val));
+            sock->setNoDelay(Z_BVAL_P(val));
         break;
 
         case PDO_CASSANDRA_ATTR_CONN_TIMEOUT:
             convert_to_long(val);
-            H->socket->setConnTimeout(Z_LVAL_P(val));
+            sock->setConnTimeout(Z_LVAL_P(val));
         break;
 
         case PDO_CASSANDRA_ATTR_RECV_TIMEOUT:
             convert_to_long(val);
-            H->socket->setRecvTimeout(Z_LVAL_P(val));
+            sock->setRecvTimeout(Z_LVAL_P(val));
         break;
 
         case PDO_CASSANDRA_ATTR_SEND_TIMEOUT:
             convert_to_long(val);
-            H->socket->setSendTimeout(Z_LVAL_P(val));
+            sock->setSendTimeout(Z_LVAL_P(val));
         break;
 
         case PDO_CASSANDRA_ATTR_COMPRESSION:
@@ -820,6 +884,33 @@ pdo_driver_t pdo_cassandra_driver = {
     pdo_cassandra_handle_factory
 };
 
+/**
+ * Default implementation of AccessManager
+ */
+Decision NoHostVerificationAccessManager::verify(const sockaddr_storage& sa)
+throw() {
+    (void) sa;
+    return SKIP;
+}
+
+Decision NoHostVerificationAccessManager::verify(const std::string& host,
+                                            const char* name,
+                                            int size) throw() {
+    return ALLOW;;
+}
+
+Decision NoHostVerificationAccessManager::verify(const sockaddr_storage& sa,
+                                            const char* data,
+                                            int size) throw() {
+    bool match = false;
+    if (sa.ss_family == AF_INET && size == sizeof(in_addr)) {
+        match = (memcmp(&((sockaddr_in*)&sa)->sin_addr, data, size) == 0);
+    } else if (sa.ss_family == AF_INET6 && size == sizeof(in6_addr)) {
+        match = (memcmp(&((sockaddr_in6*)&sa)->sin6_addr, data, size) == 0);
+    }
+    return (match ? ALLOW : SKIP);
+}
+
 /* {{{ PHP_MINIT_FUNCTION */
 PHP_MINIT_FUNCTION(pdo_cassandra)
 {
@@ -853,6 +944,15 @@ PHP_MINIT_FUNCTION(pdo_cassandra)
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_CONSISTENCYLEVEL_TWO",          PDO_CASSANDRA_CONSISTENCYLEVEL_TWO);
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_CONSISTENCYLEVEL_THREE",          PDO_CASSANDRA_CONSISTENCYLEVEL_THREE);
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_CONSISTENCYLEVEL_LOCAL_ONE",          PDO_CASSANDRA_CONSISTENCYLEVEL_LOCAL_ONE);
+
+    // SSL properties
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_ATTR_SSL_KEY",          PDO_CASSANDRA_ATTR_SSL_KEY);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_ATTR_SSL_CERT",          PDO_CASSANDRA_ATTR_SSL_CERT);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_ATTR_SSL_CAPATH",          PDO_CASSANDRA_ATTR_SSL_CAPATH);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_ATTR_SSL_VALIDATE",          PDO_CASSANDRA_ATTR_SSL_VALIDATE);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_ATTR_SSL_VERIFY_HOST",          PDO_CASSANDRA_ATTR_SSL_VERIFY_HOST);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_ATTR_SSL_CIPHER",          PDO_CASSANDRA_ATTR_SSL_CIPHER);
+
 
     // Type exports
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_INT", PDO_CASSANDRA_TYPE_INTEGER);

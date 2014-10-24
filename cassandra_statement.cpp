@@ -51,6 +51,8 @@ static zend_bool pdo_cassandra_describe_keyspace(pdo_stmt_t *stmt TSRMLS_DC)
         pdo_cassandra_error(stmt->dbh, PDO_CASSANDRA_AUTHORIZATION_ERROR, "%s", e.why.c_str());
     } catch (SchemaDisagreementException &e) {
         pdo_cassandra_error(stmt->dbh, PDO_CASSANDRA_SCHEMA_DISAGREEMENT, "%s", e.what());
+    } catch (TSSLException &e) {
+        pdo_cassandra_error_exception(stmt->dbh, PDO_CASSANDRA_SSL_ERROR, "%s", e.what());
     } catch (TTransportException &e) {
         pdo_cassandra_error(stmt->dbh, PDO_CASSANDRA_TRANSPORT_ERROR, "%s", e.what());
     } catch (TException &e) {
@@ -123,6 +125,8 @@ static int pdo_cassandra_stmt_execute(pdo_stmt_t *stmt TSRMLS_DC)
         pdo_cassandra_error(stmt->dbh, PDO_CASSANDRA_AUTHORIZATION_ERROR, "%s", e.why.c_str());
     } catch (SchemaDisagreementException &e) {
         pdo_cassandra_error(stmt->dbh, PDO_CASSANDRA_SCHEMA_DISAGREEMENT, "%s", e.what());
+    } catch (TSSLException &e) {
+        pdo_cassandra_error_exception(stmt->dbh, PDO_CASSANDRA_SSL_ERROR, "%s", e.what());
     } catch (TTransportException &e) {
         pdo_cassandra_error(stmt->dbh, PDO_CASSANDRA_TRANSPORT_ERROR, "%s", e.what());
     } catch (TException &e) {
