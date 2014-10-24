@@ -52,9 +52,9 @@ Before make test:
     $ cp tests/config.inc-dist tests/config.inc
     $ $EDITOR tests/config.inc
 
-For running tests with SSL configuration, use $params in config.inc for setting certificate path, private/public key etc. 
-
 This is to prevent accidentally dropping keyspaces that might in use.
+
+For running tests with SSL configuration, use $params in config.inc for setting certificate path, private/public key etc. 
 
 # Create a debian package from the sources
 
