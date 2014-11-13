@@ -42,13 +42,12 @@ pdo_cassandra ./configure script takes the following options:
 
  - --with-boost-dir[=DIR] can be used to specify 'non-standard' boost installation prefix.
 
-    $ phpize
-    
+Build steps:
+    $ phpise
     $ ./configure
-    
     $ make
-    
-    $ sudo make install
+    $ sudo make install 
+ 
 
 # Running tests
 
