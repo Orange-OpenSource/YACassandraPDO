@@ -45,7 +45,7 @@ pdo_cassandra ./configure script takes the following options:
     $ phpize
     $ ./configure
     $ make
-    $sudo make install
+    $ sudo make install
 
 # Running tests
 
