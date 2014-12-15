@@ -44,7 +44,7 @@ pdo_cassandra ./configure script takes the following options:
 
 Build steps:
 
-    $ phpise
+    $ phpize
     $ ./configure
     $ make
     $ sudo make install 
