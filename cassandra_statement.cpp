@@ -263,9 +263,20 @@ namespace StreamExtraction {
     {
         T val = T();
         unsigned char *pval = reinterpret_cast<unsigned char *>(&val) + stream_size;
-        for (size_t i = 0; i < stream_size; i++) {
         --pval;
-        *pval = bytes[i];
+        bool neg = bytes[0] & 0x80;
+        for (size_t i = 0; i < stream_size; i++) {
+            *pval = bytes[i];
+            --pval;
+        }
+
+        // Negative number found
+        if (neg) {
+            pval = reinterpret_cast<unsigned char *>(&val) + sizeof(T);
+            for (size_t i = stream_size; i < sizeof(T); i++) {
+                --pval;
+                *pval = 0xff;
+            }
         }
         return val;
     }
