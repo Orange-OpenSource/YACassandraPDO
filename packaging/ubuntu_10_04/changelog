@@ -1,4 +1,10 @@
-php-pdo-cassandra (0.6.0) precise; urgency=low
+php-pdo-cassandra (0.6.1) lucid; urgency=low
+
+  * Fixed bug with decimal type
+
+ -- Mathieu Lornac <mlornac.ext@orange.com>  Mon, 26 Jan 2015 14:45:05 +0100
+
+php-pdo-cassandra (0.6.0) lucid; urgency=low
 
   * Compatibilty with cassandra 2.0.x. Driver is retrocompatible with cassandra 1.9.x
 
