@@ -1,3 +1,9 @@
+php-pdo-cassandra (0.6.2) precise; urgency=low
+
+  * Retry on transport exceptions
+
+ -- Mathieu Lornac <mlornac.ext@orange.com>  Thu, 29 Jan 2015 16:13:02 +0100
+
 php-pdo-cassandra (0.6.1) precise; urgency=low
 
   * Fixed bug with decimal type
