@@ -116,6 +116,7 @@ typedef struct {
     zend_bool preserve_values;
     ConsistencyLevel::type consistency;
     ConsistencyLevel::type tmpConsistency;
+    unsigned int lateRetries; /* Retry the execution after some network exception occured*/
 } pdo_cassandra_db_handle;
 /* }}} */
 
