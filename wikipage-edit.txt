@@ -10,7 +10,7 @@
 
 	PDO_CASSANDRA_ATTR_SSL_VALIDATE => If this option is set, server cert is validated for Trusted CA etc.
 
-	PDO_CASSANDRA_ATTR_SSL_VERIFY_HOST => If this option is 'true' (1) by default, set it to false for skipping host name verification in server cert. 
+	PDO_CASSANDRA_ATTR_SSL_VERIFY_HOST => If this option is 'true' (1) by default, set it to false for skipping host name verification in server cert.
 
 	PDO_CASSANDRA_ATTR_SSL_CIPHER => Use this options to set CIPHERS to be supported by your client, which should be super set of server ciphers.
 
