@@ -272,7 +272,7 @@ static int pdo_cassandra_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSR
     H->has_description = 0;
     H->preserve_values = 0;
 
-    H->factory.reset(new TSSLSocketFactory);
+    H->factory.reset(new PasswordCallbackTSSLSocketFactory);
     H->socket.reset(new TSocketPool);
     H->transport.reset(new TFramedTransport(H->socket));
     H->protocol.reset(new TBinaryProtocol(H->transport));
@@ -282,7 +282,7 @@ static int pdo_cassandra_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSR
     /* set possible connection timeout */
     long timeout = 0;
     /* set SSL propeties */
-    char *ssl_key = NULL, *ssl_cert = NULL, *ssl_cipher = NULL, *ssl_capath = NULL;
+    char *ssl_key = NULL, *ssl_key_passphrase = NULL, *ssl_cert = NULL, *ssl_cipher = NULL, *ssl_capath = NULL;
     int ssl_validate = 0, ssl_verify_host = 1;
 
     if (driver_options) {
@@ -302,6 +302,7 @@ static int pdo_cassandra_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSR
         }
 
         ssl_key = pdo_attr_strval(driver_options, static_cast <pdo_attribute_type>(PDO_CASSANDRA_ATTR_SSL_KEY), NULL TSRMLS_CC);
+        ssl_key_passphrase = pdo_attr_strval(driver_options, static_cast <pdo_attribute_type>(PDO_CASSANDRA_ATTR_SSL_KEY_PASSPHRASE), NULL TSRMLS_CC);
         ssl_cert = pdo_attr_strval(driver_options, static_cast <pdo_attribute_type>(PDO_CASSANDRA_ATTR_SSL_CERT), NULL TSRMLS_CC);
         ssl_capath = pdo_attr_strval(driver_options, static_cast <pdo_attribute_type>(PDO_CASSANDRA_ATTR_SSL_CAPATH), NULL TSRMLS_CC);
         ssl_cipher = pdo_attr_strval(driver_options, static_cast <pdo_attribute_type>(PDO_CASSANDRA_ATTR_SSL_CIPHER), NULL TSRMLS_CC);
@@ -316,6 +317,10 @@ static int pdo_cassandra_handle_factory(pdo_dbh_t *dbh, zval *driver_options TSR
             }
 
             if (ssl_key) {
+                if (ssl_key_passphrase) {
+                    H->factory->setPassword(ssl_key_passphrase);
+                    H->factory->overrideDefaultPasswordCallback();
+                }
                 H->factory->loadPrivateKey(ssl_key);
             }
 
@@ -911,6 +916,10 @@ Decision NoHostVerificationAccessManager::verify(const sockaddr_storage& sa,
     return (match ? ALLOW : SKIP);
 }
 
+void PasswordCallbackTSSLSocketFactory::getPassword(std::string& password/* password */, int length/* size */) {
+    password = sslkeyPassphrase_;
+}
+
 /* {{{ PHP_MINIT_FUNCTION */
 PHP_MINIT_FUNCTION(pdo_cassandra)
 {
@@ -947,6 +956,7 @@ PHP_MINIT_FUNCTION(pdo_cassandra)
 
     // SSL properties
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_ATTR_SSL_KEY",          PDO_CASSANDRA_ATTR_SSL_KEY);
+    PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_ATTR_SSL_KEY_PASSPHRASE",          PDO_CASSANDRA_ATTR_SSL_KEY_PASSPHRASE);
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_ATTR_SSL_CERT",          PDO_CASSANDRA_ATTR_SSL_CERT);
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_ATTR_SSL_CAPATH",          PDO_CASSANDRA_ATTR_SSL_CAPATH);
     PHP_PDO_CASSANDRA_REGISTER_CONST_LONG("CASSANDRA_ATTR_SSL_VALIDATE",          PDO_CASSANDRA_ATTR_SSL_VALIDATE);

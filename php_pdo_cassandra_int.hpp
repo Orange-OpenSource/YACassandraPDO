@@ -64,6 +64,8 @@ using namespace apache::thrift::protocol;
 using namespace apache::thrift::transport;
 using namespace org::apache::cassandra;
 
+class PasswordCallbackTSSLSocketFactory;
+
 enum pdo_cassandra_type {
     PDO_CASSANDRA_TYPE_UTF8 = PDO_PARAM_STR,
     PDO_CASSANDRA_TYPE_INTEGER = PDO_PARAM_INT,
@@ -104,7 +106,7 @@ typedef struct {
 typedef struct {
     zend_object zo;
     zend_bool compression;
-    boost::shared_ptr<TSSLSocketFactory> factory;
+    boost::shared_ptr<PasswordCallbackTSSLSocketFactory> factory;
     boost::shared_ptr<TSSLSocket> sslSocket;
     boost::shared_ptr<TSocketPool> socket;
     boost::shared_ptr<TFramedTransport> transport;
@@ -158,6 +160,7 @@ enum pdo_cassandra_constant {
     PDO_CASSANDRA_ATTR_MAX,
     PDO_CASSANDRA_ATTR_CONSISTENCYLEVEL,
     PDO_CASSANDRA_ATTR_SSL_KEY,
+    PDO_CASSANDRA_ATTR_SSL_KEY_PASSPHRASE,
     PDO_CASSANDRA_ATTR_SSL_CERT,
     PDO_CASSANDRA_ATTR_SSL_CAPATH,
     PDO_CASSANDRA_ATTR_SSL_VALIDATE,
@@ -209,5 +212,16 @@ public:
     Decision verify(const sockaddr_storage& sa) throw();
     Decision verify(const std::string& host, const char* name, int size) throw();
     Decision verify(const sockaddr_storage& sa, const char* data, int size) throw();
+};
+
+class PasswordCallbackTSSLSocketFactory: public TSSLSocketFactory {
+public:
+    void setPassword(const char *passphrase) {
+       sslkeyPassphrase_ = passphrase;
+    }
+protected:
+    void getPassword(std::string& /* password */, int /* size */);
+private:
+    std::string sslkeyPassphrase_;
 };
 #endif /* _PHP_PDO_CASSANDRA_PRIVATE_H_ */
