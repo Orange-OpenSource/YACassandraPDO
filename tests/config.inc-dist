@@ -7,8 +7,14 @@ $dsn = 'cassandra:host=127.0.0.1;port=9160;cqlversion=3.0.0';
 $username = YourCassandraUSERName;
 $password = YourCassandraPWD;
 
-// Uncomment following line for client-server SSL enabled Cassandra server and set server certificate path.
-//$params = array (PDO::CASSANDRA_ATTR_SSL_CAPATH => YourTrustedCertPath, PDO::CASSANDRA_ATTR_SSL_VERIFY_HOST => 0);
+// Uncomment following block for SSL secured connections between PHP client and Cassandra server and set appropriate values in the array.
+/*
+$params = array (PDO_CASSANDRA_ATTR_SSL_KEY => YourSSLKeyPath,
+		PDO_CASSANDRA_ATTR_SSL_KEY_PASSPHRASE => YourKeyPassPhrase,
+		PDO_CASSANDRA_ATTR_SSL_CERT => YourSSLCertPath,
+		PDO::CASSANDRA_ATTR_SSL_CAPATH => YourTrustedCertPath,
+		PDO::CASSANDRA_ATTR_SSL_VERIFY_HOST => 0);
+*/
 $params = array()
 
 // Warning: the keyspace will be truncated during tests
