@@ -1,3 +1,7 @@
+### Deprecated
+
+Use https://github.com/datastax/php-driver/
+
 # Introduction
 
 PDO driver implementation for Cassandra CQL.
