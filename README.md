@@ -13,6 +13,10 @@ NEW: The driver is compatible with versions of Cassandra up to 2.0.x
 
 The support of Cassandra 2.0 is very new. So if you experience bugs, incorrect behavior or anything suspect, don't hesitate to fill a bug report.
 
+For newer Cassandra versions and native protocol support, check the official Datastax driver:
+https://github.com/datastax/php-driver
+
+
 # What is different from the Datastax version?
  - Added support for float numbers, decimals
  - Added support for collections (map, set, list)
@@ -78,3 +82,13 @@ This is to prevent accidentally dropping keyspaces that might in use.
 
 Pull requests containing fixes and/or additional tests are highly appreciated.
 Documentation is also far from being complete, feel free to report the difficulties you face.
+
+# PHP 7 support
+For PHP7 support:
+https://github.com/bixuehujin/YACassandraPDO/tree/php7
+(I haven't tested it)
+
+# Native Protocol Support
+Please see the official datastax driver:
+https://github.com/datastax/php-driver
+
