@@ -7,9 +7,9 @@ Test initialization of persistent connections
 
 require_once(dirname(__FILE__) . '/config.inc');
 
-$db = new PDO($dsn, $username, $password, array (
+$db = new PDO($dsn, $username, $password, array_merge($params, array (
                   PDO::ATTR_PERSISTENT => true
-             ));
+             )));
 
 echo "OK";
 

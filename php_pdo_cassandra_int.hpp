@@ -15,7 +15,7 @@
  */
 
 #ifndef _PHP_PDO_CASSANDRA_PRIVATE_H_
-# define _PHP_PDO_CASSANDRA_PRIVATE_H_
+#define _PHP_PDO_CASSANDRA_PRIVATE_H_
 
 #ifndef CASSANDRA_CQL_VERSION
 #define CASSANDRA_CQL_VERSION "3.0.0"
@@ -50,6 +50,7 @@ extern "C" {
 #include <thrift/protocol/TBinaryProtocol.h>
 #include <thrift/transport/TSocketPool.h>
 #include <thrift/transport/TTransportUtils.h>
+#include <thrift/transport/TSSLSocket.h>
 
 #undef HAVE_ZLIB
 #define HAVE_ZLIB HAVE_ZLIB_CP
@@ -62,6 +63,8 @@ using namespace apache::thrift;
 using namespace apache::thrift::protocol;
 using namespace apache::thrift::transport;
 using namespace org::apache::cassandra;
+
+class PasswordCallbackTSSLSocketFactory;
 
 enum pdo_cassandra_type {
     PDO_CASSANDRA_TYPE_UTF8 = PDO_PARAM_STR,
@@ -103,6 +106,8 @@ typedef struct {
 typedef struct {
     zend_object zo;
     zend_bool compression;
+    boost::shared_ptr<PasswordCallbackTSSLSocketFactory> factory;
+    boost::shared_ptr<TSSLSocket> sslSocket;
     boost::shared_ptr<TSocketPool> socket;
     boost::shared_ptr<TFramedTransport> transport;
     boost::shared_ptr<TProtocol> protocol;
@@ -114,6 +119,7 @@ typedef struct {
     KsDef description;
     zend_bool has_description;
     zend_bool preserve_values;
+    zend_bool ssl;
     ConsistencyLevel::type consistency;
     ConsistencyLevel::type tmpConsistency;
 } pdo_cassandra_db_handle;
@@ -152,7 +158,14 @@ enum pdo_cassandra_constant {
     PDO_CASSANDRA_ATTR_THRIFT_DEBUG,
     PDO_CASSANDRA_ATTR_PRESERVE_VALUES,
     PDO_CASSANDRA_ATTR_MAX,
-    PDO_CASSANDRA_ATTR_CONSISTENCYLEVEL
+    PDO_CASSANDRA_ATTR_CONSISTENCYLEVEL,
+    PDO_CASSANDRA_ATTR_SSL_KEY,
+    PDO_CASSANDRA_ATTR_SSL_KEY_PASSPHRASE,
+    PDO_CASSANDRA_ATTR_SSL_CERT,
+    PDO_CASSANDRA_ATTR_SSL_CAPATH,
+    PDO_CASSANDRA_ATTR_SSL_VALIDATE,
+    PDO_CASSANDRA_ATTR_SSL_VERIFY_HOST,
+    PDO_CASSANDRA_ATTR_SSL_CIPHER
 
 };
 /* }}} */
@@ -180,6 +193,7 @@ enum pdo_cassandra_error {
     PDO_CASSANDRA_AUTHORIZATION_ERROR,
     PDO_CASSANDRA_SCHEMA_DISAGREEMENT,
     PDO_CASSANDRA_TRANSPORT_ERROR,
+    PDO_CASSANDRA_SSL_ERROR,
     PDO_CASSANDRA_INVALID_CONNECTION_STRING,
     PDO_CASSANDRA_INTEGER_CONVERSION_ERROR
 };
@@ -192,4 +206,22 @@ void pdo_cassandra_set_active_keyspace(pdo_cassandra_db_handle *H, const std::st
 void pdo_cassandra_set_active_columnfamily(pdo_cassandra_db_handle *H, const std::string &query TSRMLS_DC);
 std::string pdo_cassandra_get_first_sub_pattern(const std::string &subject, const std::string &pattern TSRMLS_DC);
 
+class NoHostVerificationAccessManager: public AccessManager {
+public:
+    // AccessManager interface
+    Decision verify(const sockaddr_storage& sa) throw();
+    Decision verify(const std::string& host, const char* name, int size) throw();
+    Decision verify(const sockaddr_storage& sa, const char* data, int size) throw();
+};
+
+class PasswordCallbackTSSLSocketFactory: public TSSLSocketFactory {
+public:
+    void setPassword(const char *passphrase) {
+       sslkeyPassphrase_ = passphrase;
+    }
+protected:
+    void getPassword(std::string& /* password */, int /* size */);
+private:
+    std::string sslkeyPassphrase_;
+};
 #endif /* _PHP_PDO_CASSANDRA_PRIVATE_H_ */

@@ -66,6 +66,8 @@ Before make test:
 
 This is to prevent accidentally dropping keyspaces that might in use.
 
+For running tests with SSL configuration, use $params in config.inc for setting certificate path, private/public key etc.
+
 # Create a debian package from the sources
 
     add "deb http://debian.datastax.com/community stable main" in your apt sources list

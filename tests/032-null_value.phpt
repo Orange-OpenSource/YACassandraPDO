@@ -9,7 +9,7 @@ Test null returns on select queries
 <?php
 require_once(dirname(__FILE__) . '/config.inc');
 
-$db = new PDO($dsn, $username, $password);
+$db = new PDO($dsn, $username, $password, $params);
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 try {

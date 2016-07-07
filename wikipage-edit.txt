@@ -1,0 +1,57 @@
+
+
+1. Following new Attributes have been added for using SSL while communicating with Cassandra which has client_encryption enabled.
+
+	PDO_CASSANDRA_ATTR_SSL_KEY => Use this property to set client SSL private key Only if 'require_client_auth' is 'true' in Cassandra client ecryption options.
+
+	PDO_CASSANDRA_ATTR_SSL_KEY_PASSPHRASE => Use this property to specify passphrase of the SSL key specified using PDO_CASSANDRA_ATTR_SSL_KEY.
+
+	PDO_CASSANDRA_ATTR_SSL_CERT => Use this property to set client public key Only if 'require_client_auth' is 'true' in Cassandra client ecryption options.
+
+	PDO_CASSANDRA_ATTR_SSL_CAPATH => Use this option to set all trusted certificates.
+
+	PDO_CASSANDRA_ATTR_SSL_VALIDATE => If this option is set, server cert is validated for Trusted CA etc.
+
+	PDO_CASSANDRA_ATTR_SSL_VERIFY_HOST => If this option is 'true' (1) by default, set it to false for skipping host name verification in server cert.
+
+	PDO_CASSANDRA_ATTR_SSL_CIPHER => Use this options to set CIPHERS to be supported by your client, which should be super set of server ciphers.
+
+Example PHP code,
+
+$dsn = 'cassandra:host=127.0.0.1;port=9160;cqlversion=3.0.0';
+
+// set username and password to null for no authentication
+$username = YourCassandraUSERName;
+$password = YourCassandraPWD;
+
+// For unsecured keys
+//$params = array (PDO_CASSANDRA_ATTR_SSL_KEY => YourSSLKeyPath,
+		   PDO_CASSANDRA_ATTR_SSL_CERT => YourSSLCertPath,
+		   PDO::CASSANDRA_ATTR_SSL_CAPATH => YourTrustedCertPath,
+		   PDO::CASSANDRA_ATTR_SSL_VERIFY_HOST => 0);
+
+// For secured keys
+$params = array (PDO_CASSANDRA_ATTR_SSL_KEY => YourSSLKeyPath,
+		PDO_CASSANDRA_ATTR_SSL_KEY_PASSPHRASE => YourKeyPassPhrase,
+		PDO_CASSANDRA_ATTR_SSL_CERT => YourSSLCertPath,
+		PDO::CASSANDRA_ATTR_SSL_CAPATH => YourTrustedCertPath,
+		PDO::CASSANDRA_ATTR_SSL_VERIFY_HOST => 0);
+
+$db = new PDO($dsn, $username, $password, $params);
+
+2. For the reference, your Cassandra server configuration should look like as follows,
+
+# enable or disable client/server encryption.
+client_encryption_options:
+    enabled: true
+    keystore: /etc/cassandra/conf/.keystore
+    keystore_password: *******
+    truststore: /etc/cassandra/conf/.truststore
+    truststore_password: *******
+    # require_client_auth: true
+    # Set trustore and truststore_password if require_client_auth is true
+    # More advanced defaults below:
+    # protocol: TLS
+    # algorithm: SunX509
+    # store_type: JKS
+    # cipher_suites: [TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA]
