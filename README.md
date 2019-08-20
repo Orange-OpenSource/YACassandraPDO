@@ -5,7 +5,7 @@ PDO driver implementation for Cassandra CQL.
 This repository is a fork of: https://code.google.com/a/apache-extras.org/p/cassandra-pdo/
 We cloned it on GitHub because the original project seemed to be dead.
 
-This version is developped for the CQL3 target only. We do not provide any support for former versions of CQL.
+This version is developed for the CQL3 target only. We do not provide any support for former versions of CQL.
 
 # Cassandra versions support
 
